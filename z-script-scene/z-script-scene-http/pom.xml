@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://www.w3.org/2001/XMLSchema-instance http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        z-script-scene-http: HTTP 场景组装（通用、业务无关）。
+        在 z-script-core（实体）+ z-script-engine（引擎）之上封装多请求链路编排：
+        HttpChainExecutor / 变量替换 ${VAR} / JSONPath 提取 / 断言 / Mock 分流 / 全链路溯源。
+        由 z-qa 等上层业务模块复用。
+    -->
+    <parent>
+        <groupId>io.github.yuku123</groupId>
+        <artifactId>z-script-scene</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>z-script-scene-http</artifactId>
+    <packaging>jar</packaging>
+
+    <name>z-script :: scene :: http</name>
+    <description>HTTP 多步链路编排（变量提取 / 断言 / Mock 分流 / 溯源）</description>
+
+    <dependencies>
+        <!-- Log4j2 API (本模块 src/main/java 含 LogManager.getLogger 调用) -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <!-- 复用 z-script-core 实体 (MockEndpoint / MockEnvironment / MockTestCase / MockScenario 等) -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-script-core</artifactId>
+        </dependency>
+
+        <!-- 复用 z-script-engine 的现有引擎:
+             AssertionEngine / JsonPathExtractor / PlaybackEngine / ScenarioStateMachine
+             MockEngine / MockTemplateEngine / RequestMatcherEngine / RecorderEngine -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-script-engine</artifactId>
+        </dependency>
+
+        <!-- 工具基础 -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-core</artifactId>
+        </dependency>
+        <!-- z-util JSON (替代 fastjson, 2026-08-14 迁移) -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-parser-json</artifactId>
+        </dependency>
+
+        <!-- Spring Web (供 HttpChainController 使用) -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-boot-web-starter</artifactId>
+        </dependency>
+    </dependencies>
+</project>

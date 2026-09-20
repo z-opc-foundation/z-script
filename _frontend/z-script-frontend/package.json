@@ -1,0 +1,23 @@
+{
+  "name": "@yuku123/z-script-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Z-Script 控制台应用层（脚本平台 + Mock 平台），构建产物由 z-script-admin 嵌入 jar",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:component && vite build",
+    "build:component": "cd ../z-script-frontend-component && npm install --silent && npm run build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@yuku123/z-script-frontend-component": "file:../z-script-frontend-component",
+    "antd": "^5.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0"
+  }
+}

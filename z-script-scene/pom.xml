@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://www.w3.org/2001/XMLSchema-instance http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        z-script-scene: 场景化组装层（聚合 pom）。
+        复用 z-script-core 实体 + z-script-engine 引擎，在上层封装「多请求链路编排」通用能力
+        （类似 Postman），当前已纳入 z-script-scene-http；未来可扩展 z-script-scene-mq 等。
+        版本与内部模块 dependencyManagement 全部继承 z-script parent，此处不再重复锁。
+    -->
+    <parent>
+        <groupId>io.github.yuku123</groupId>
+        <artifactId>z-script</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>z-script-scene</artifactId>
+    <packaging>pom</packaging>
+
+    <name>z-script :: scene (aggregator)</name>
+    <description>z-script 场景化组装层聚合 pom</description>
+
+    <modules>
+        <module>z-script-scene-http</module>
+    </modules>
+</project>

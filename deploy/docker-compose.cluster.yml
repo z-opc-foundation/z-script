@@ -1,0 +1,98 @@
+# Mode 3：集群部署（1 前端 nginx + N 后端 jar）
+# 适用：生产 / 高可用 / 灰度发布
+#
+# 启动：cd deploy && docker compose -f docker-compose.cluster.yml --profile with-db up -d
+# 访问：http://localhost/script/
+# 调整后端副本：docker compose -f docker-compose.cluster.yml up -d --scale z-script-backend=3
+# 停止：docker compose -f docker-compose.cluster.yml --profile with-db down
+
+services:
+  z-script-backend:
+    image: ghcr.io/yuku123/z-script-admin:1.0.0
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      args:
+        JAR_FILE: z-script-admin/target/z-script-admin-1.0.0-exec.jar
+    restart: unless-stopped
+    # 不固定 replicas，命令行 --scale 决定（默认 1）
+    expose:
+      - "8086"
+    environment:
+      # ModuleDataSourceTemplate 读 z.base.db.script.*
+      Z_BASE_DB_SCRIPT_HOST: ${Z_BASE_DB_SCRIPT_HOST:-z-script-mysql}
+      Z_BASE_DB_SCRIPT_PORT: ${Z_BASE_DB_SCRIPT_PORT:-3306}
+      Z_BASE_DB_SCRIPT_DATABASE: ${Z_BASE_DB_SCRIPT_DATABASE:-z_script}
+      Z_BASE_DB_SCRIPT_USERNAME: ${Z_BASE_DB_SCRIPT_USERNAME:-root}
+      Z_BASE_DB_SCRIPT_PASSWORD: ${Z_BASE_DB_SCRIPT_PASSWORD:-}
+      JAVA_OPTS: "-Xms512m -Xmx1g"
+    networks:
+      - z-script-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8086/script/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  z-script-frontend:
+    image: ghcr.io/yuku123/z-script-frontend:1.0.0
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      # nginx 反代到 backend service（docker compose 自动 DNS）
+      BACKEND_SERVICE: z-script-backend
+    networks:
+      - z-script-net
+    depends_on:
+      z-script-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # 可选：--profile with-db 时起一个试用库（生产请用外部 RDS/集群库，不要容器化 MySQL）
+  z-script-mysql:
+    profiles: ["with-db"]
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:13306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${Z_BASE_DB_SCRIPT_PASSWORD:-}
+      MYSQL_DATABASE: z_script
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    volumes:
+      - z-script-mysql-data:/var/lib/mysql
+      - ../_doc/002_deploy/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - z-script-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+networks:
+  z-script-net:
+    driver: bridge
+
+volumes:
+  z-script-mysql-data:
+
+# 验证步骤：
+# 1. 启动 3 副本：docker compose -f docker-compose.cluster.yml --profile with-db up -d --scale z-script-backend=3
+# 2. docker compose -f docker-compose.cluster.yml ps（应看到 1 个 frontend + 3 个 backend 容器）
+# 3. 访问前端：http://localhost/script/（nginx 自动负载均衡到 3 个后端）
+# 4. 查看后端轮询：curl -i http://localhost/script/api/script/list（带 X-Api-Key 连续多次，看是否命中不同实例）
+# 5. 验证某个后端挂了还能服务：docker stop $(docker compose -f docker-compose.cluster.yml ps -q z-script-backend | head -1)，
+#    再访问 http://localhost/script/（应仍可用，nginx 自动跳过挂了的后端）

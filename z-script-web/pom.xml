@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://www.w3.org/2001/XMLSchema-instance http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        z-script-web: 业务方 import 的入口（REST Controller + AutoConfiguration + MyBatis 装配）。
+        通过 META-INF/spring.factories 注册 ZScriptWebAutoConfiguration，
+        业务方引本 artifact（或 z-script-admin 同源）即得 /api/script/* + /api/mock/* 全量能力。
+
+        规范 §2.5：web 模块虽是 web 层，但它是 starter 形态的能力封装（自带控制台的 REST/装配），
+        与 z-config-web / z-mist-web 同构 → 上 Maven Central。
+        可独立运行的入口在 z-script-admin（deploy.skip=true，不上 Central）。
+    -->
+    <parent>
+        <groupId>io.github.yuku123</groupId>
+        <artifactId>z-script</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>z-script-web</artifactId>
+    <packaging>jar</packaging>
+
+    <name>z-script :: web</name>
+    <description>脚本平台 / Mock 平台的 REST 接口 + Spring Boot 自动装配（业务方 import 入口）</description>
+
+    <dependencies>
+        <!-- Jackson databind (本模块 src/main/java 用 ObjectMapper / JsonNode 等) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <!-- Log4j2 API (本模块 src/main/java 含 LogManager.getLogger 调用) -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-script-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-script-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-boot-datasource-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>2.2.8</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-parser-json</artifactId>
+        </dependency>
+    </dependencies>
+</project>

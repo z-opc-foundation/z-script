@@ -1,0 +1,23 @@
+# 后端 Deployment 引用的非敏感配置。
+#
+# 占位符（bin/k8s-apply.sh 用 envsubst 渲染）：${NAMESPACE} ${DB_HOST} ${DB_PORT} ${DB_DATABASE}
+#
+# ⚠️ 凭证管理规范（lead/008_组织规范/001_凭证管理规范.md）：数据库 username/password
+#    不进 Git，本目录也不放 Secret 模板。真机部署由 k8s-apply.sh 现场执行
+#      kubectl -n <ns> create secret generic z-script-db-credentials \
+#        --from-literal=username=<u> --from-literal=password=<p>
+#    生产建议换成 External Secrets / Sealed Secrets / SOPS 托管。
+#
+# key 名与 01-deployment-backend.yaml 的 configMapKeyRef 一一对应；
+# 值最终落到容器环境变量 Z_BASE_DB_SCRIPT_*，因为 ModuleDataSourceTemplate 读的是 z.base.db.script.*。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: z-script-config
+  namespace: ${NAMESPACE}
+  labels:
+    app.kubernetes.io/name: z-script
+data:
+  db.host: "${DB_HOST}"
+  db.port: "${DB_PORT}"
+  db.database: "${DB_DATABASE}"

@@ -1,0 +1,99 @@
+# ---------- macOS ----------
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ---------- Java / Maven ----------
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.flattened-pom.xml
+**/*.flattened-pom.xml
+dependency-reduced-pom.xml
+*.lst
+mvnw
+mvnw.cmd
+.mvn/wrapper/maven-wrapper.jar
+
+# ---------- IDE ----------
+.idea/
+**/.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+.springBeans
+
+# ---------- Node (_frontend/ 两层 npm 项目) ----------
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.local
+
+# ---------- 前端构建产物 ----------
+# 应用层 dist/ 由 admin pom 的 maven-resources-plugin 复制进 target/classes/static/，不入仓
+dist/
+**/dist/
+dist-ssr/
+**/.vite/
+_frontend/node/
+# admin 源码目录只放占位，实际 dist 落在 target/classes/static/
+**/src/main/resources/static/assets/
+
+# ---------- Logs ----------
+logs/
+**/logs/
+*.log
+*.log.*
+
+# ---------- Secrets (Maven Central 发布凭证 + 本地 env 覆盖) ----------
+.env
+.gnupg/
+**/.gnupg/
+*.pem
+*.key
+id_rsa*
+
+# ⚠️ 本地 Spring profile 配置（可能含真实 DB 密码，绝不 commit）
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+**/application-dev.yml
+**/application-dev.properties
+**/application-prod.yml
+**/application-prod.properties
+
+# ---------- OS scratch ----------
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.orig
+*.rej
+
+# ---------- Build context / Docker stale ----------
+/.build-context/
+.build-context/
+
+# ---------- 跨仓消费验证脚手架产物 ----------
+deploy/v4-test/node_modules/
+deploy/v4-test/*.bundle.mjs
+
+# ===== Git 本地备份目录 (历史塌缩用) =====
+.git.bak.*/

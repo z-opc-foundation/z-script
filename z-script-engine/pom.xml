@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://www.w3.org/2001/XMLSchema-instance http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        z-script-engine: 执行内核。
+        - ScriptEngine + sandbox/（Groovy / EL 沙箱，SecureASTCustomizer + 超时）
+        - Mock 内核（MockEngine / MockTemplateEngine / RequestMatcherEngine / RecorderEngine /
+          PlaybackEngine / ScenarioStateMachine / AssertionEngine / JsonPathExtractor / FaultInjectionEngine）
+        - 动态 API（ApiSpecParser / DynamicApiExecutor，把脚本暴露成 HTTP 接口）
+        - ScriptMcpAdapter：反射调用 MCP Registry，把脚本暴露成 MCP Tool（编译期零依赖 L1）
+    -->
+    <parent>
+        <groupId>io.github.yuku123</groupId>
+        <artifactId>z-script</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>z-script-engine</artifactId>
+    <packaging>jar</packaging>
+
+    <name>z-script :: engine</name>
+    <description>脚本沙箱执行引擎 + Mock/录制回放/断言/故障注入内核</description>
+
+    <dependencies>
+        <!-- Log4j2 API (本模块 src/main/java 含 LogManager.getLogger 调用) -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-script-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- z-util-expr: 表达式/脚本执行能力 -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-expr-el</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-expr-groovy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-expr-lua</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-expr-sql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-expr-js</artifactId>
+            <!-- D03 沙箱: 排除 z-util-expr-js 误引入的 gmaven-runtime -> groovy-all-minimal:1.5.6,
+                 该远古 Groovy 会 shadow 3.0.9 的 CompilerConfiguration/SecureASTCustomizer, 导致编译/运行错乱 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.codehaus.groovy.maven.runtime</groupId>
+                    <artifactId>gmaven-runtime-default</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- z-util-http: OkHttp + curl parser/builder + HttpRequestDefinition -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-http</artifactId>
+        </dependency>
+
+        <!-- z-util-parser-json: JsonUtil -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-parser-json</artifactId>
+        </dependency>
+
+        <!-- D03 脚本沙箱: 显式声明 Groovy/SpEL 编译依赖(而非依赖 z-util-expr-* 的传递),
+             以便直接引用 SecureASTCustomizer / SimpleEvaluationContext 等沙箱 API。
+             Groovy 版本由 z-boot-dependencies BOM 锁定；SpEL 由 spring-boot-dependencies 锁定。 -->
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+        </dependency>
+
+        <!-- D03 沙箱自测: ScriptSandboxTest（junit 依赖由 parent 统一提供） -->
+    </dependencies>
+</project>

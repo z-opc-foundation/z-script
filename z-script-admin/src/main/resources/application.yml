@@ -1,0 +1,62 @@
+server:
+  port: ${SERVER_PORT:8086}
+  servlet:
+    # 控制台挂在 /script/ 下，与 _frontend/z-script-frontend/vite.config.js 的 base 严格一致
+    context-path: /script
+
+spring:
+  application:
+    name: z-script
+  main:
+    allow-bean-definition-overriding: true
+  # 关掉 MyBatis-Plus 自动配置：SqlSessionFactory 由 ScriptMyBatisConfig 显式装配。
+  # 实测：只留 script 这一个工厂时，MP 的 @ConditionalOnMissingBean 会自己退让（去掉这行也能起）；
+  # 保留它是为了不赌退让顺序 —— classpath 上再多一个自带工厂的模块（曾被 z-ctc-web 咬过一次），
+  # 自动配置就会以 "expected single matching bean but found 2" 直接崩启动。z-opc main-starter 同款处理。
+  autoconfigure:
+    exclude: com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
+
+# z-boot-datasource-starter 的 ModuleDataSourceTemplate 读取的正是 z.base.db.<module>.*
+# （孵化前的历史写法是 spring.datasource.script.*，该键无人读取 → 静默回落到 localhost/root/空库）
+z:
+  base:
+    db:
+      script:
+        host: ${Z_BASE_DB_SCRIPT_HOST:localhost}
+        port: ${Z_BASE_DB_SCRIPT_PORT:3306}
+        database: ${Z_BASE_DB_SCRIPT_DATABASE:z_script}
+        username: ${Z_BASE_DB_SCRIPT_USERNAME:root}
+        password: ${Z_BASE_DB_SCRIPT_PASSWORD:}
+
+logging:
+  level:
+    # 全仓没有任何 logback(-spring).xml，logback 落到内置默认 root=DEBUG，
+    # 启动实测会把 SpEL / DispatcherServlet / SQL 的明细全打出来。显式收口到 INFO。
+    root: INFO
+    com.zifang.z.script: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      # deploy/k8s/01-deployment-backend.yaml 的探针打的是 /actuator/health/{liveness,readiness}。
+      # 这两个分组默认只在 Cloud Platform=Kubernetes 时自动开启，本机/ compose 下不存在 → 404。
+      # 显式打开，探针才与配置一致（liveness 只看生命周期，readiness 才带上 DB 等依赖）。
+      probes:
+        enabled: true
+
+---
+# dev：本机联调用（连本机 MySQL，库需先执行 _doc/002_deploy/init.sql）。
+# 鉴权始终是 z-script 自己的 API Key（ApiKeyAuthInterceptor），dev 下不关掉它，
+# 只是把日志级别打到 DEBUG 方便看脚本执行链路。
+spring:
+  config:
+    activate:
+      on-profile: dev
+logging:
+  level:
+    com.zifang.z.script: DEBUG

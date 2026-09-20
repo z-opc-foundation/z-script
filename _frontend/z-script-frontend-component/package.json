@@ -1,0 +1,36 @@
+{
+  "name": "@yuku123/z-script-frontend-component",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Z-Script 可复用前端组件层（脚本列表 / Mock 端点列表，纯展示、接 props 不 fetch）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "antd": "^5.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "antd": "^5.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite": "^5.0.0"
+  }
+}

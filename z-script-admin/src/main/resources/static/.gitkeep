@@ -1,0 +1,2 @@
+<!-- 前端构建产物由 admin pom 的 maven-resources-plugin 复制到 target/classes/static/；
+     本目录只保留占位文件，禁止手放 dist（见 lead/005 §6.1 V2） -->

@@ -1,0 +1,75 @@
+# Mode 1：合体部署（单容器，后端 jar 内嵌前端）
+# 适用：试用 / PoC / 个人开发 / 中小团队
+#
+# 只起后端（连已有 MySQL）：cd deploy && docker compose up -d
+# 连 MySQL 一起起（自动执行 init.sql 建库建表）：
+#   cd deploy && docker compose --profile with-db up -d
+# 访问：http://localhost:8086/script
+# 停止：docker compose --profile with-db down
+
+services:
+  z-script-admin:
+    container_name: z-script-admin
+    image: ghcr.io/yuku123/z-script-admin:1.0.0
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      args:
+        JAR_FILE: z-script-admin/target/z-script-admin-1.0.0-exec.jar
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      # 数据库凭证（明文敏感，仅本地试用用。生产用 docker secret / k8s Secret）
+      # ModuleDataSourceTemplate 读 z.base.db.script.*（不是 SPRING_DATASOURCE_*）
+      Z_BASE_DB_SCRIPT_HOST: ${Z_BASE_DB_SCRIPT_HOST:-z-script-mysql}
+      Z_BASE_DB_SCRIPT_PORT: ${Z_BASE_DB_SCRIPT_PORT:-3306}
+      Z_BASE_DB_SCRIPT_DATABASE: ${Z_BASE_DB_SCRIPT_DATABASE:-z_script}
+      Z_BASE_DB_SCRIPT_USERNAME: ${Z_BASE_DB_SCRIPT_USERNAME:-root}
+      Z_BASE_DB_SCRIPT_PASSWORD: ${Z_BASE_DB_SCRIPT_PASSWORD:-}
+      # JVM
+      JAVA_OPTS: "-Xms512m -Xmx1g"
+    volumes: []   # 可选挂载（如 H2 数据持久化），需要时启用
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8086/script/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # 可选：本地一键起库。默认不启动，--profile with-db 时才参与。
+  # 首次启动（数据卷为空）会自动执行 _doc/002_deploy/init.sql 建 16 张表 + demo 数据。
+  # 刻意不预置 API Key —— 凭证不入仓，Key 由控制台「签发 AK」或 POST /api/script/api-key 现场申请。
+  z-script-mysql:
+    profiles: ["with-db"]
+    container_name: z-script-mysql
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:13306:3306"   # 只绑本机回环，避开 3306 且不暴露到局域网
+    environment:
+      # 与后端共用同一个变量，避免出现"库起来了但密码对不上"。
+      # 不设置 → MySQL root 为空密码，仅适用于本机一次性试用卷；生产必须走 Secret。
+      MYSQL_ROOT_PASSWORD: ${Z_BASE_DB_SCRIPT_PASSWORD:-}
+      MYSQL_DATABASE: z_script
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    volumes:
+      - z-script-mysql-data:/var/lib/mysql
+      - ../_doc/002_deploy/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  z-script-mysql-data:
+
+# 验证步骤：
+# 1. 等待健康检查通过：docker compose --profile with-db ps
+# 2. 访问：http://localhost:8086/script（控制台，先点「签发 AK」再拉列表）
+# 3. 访问 API：http://localhost:8086/script/actuator/health（应返回 {"status":"UP"}）
+# 4. 业务 API 需要 X-Api-Key，无 Key 时返回 401（默认全拒，只有创建 Key 的引导端点免鉴权）

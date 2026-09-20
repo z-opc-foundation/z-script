@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://www.w3.org/2001/XMLSchema-instance http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+        z-script-admin: 独立可启动的脚本平台 + Mock 平台单体应用（自带 Web 控制台）。
+
+        - 留在 reactor（统一构建），但 maven.deploy.skip=true → 永不上传 Maven Central
+          （规范 lead/005_技术架构/005_前端工程与中间件部署架构规范.md §2）
+        - 前端由 _frontend/z-script-frontend/ 经 frontend-maven-plugin 构建，
+          再由 maven-resources-plugin 复制到 target/classes/static/（不污染源码目录）
+        - 本地启动: mvn -pl z-script-admin -am package -DskipTests
+                     java -jar z-script-admin/target/z-script-admin-1.0.0-exec.jar
+        - 凭证: 全部走环境变量占位符，绝不写明文（规范 lead/008_组织规范/001_凭证管理规范.md）
+    -->
+    <parent>
+        <groupId>io.github.yuku123</groupId>
+        <artifactId>z-script</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>z-script-admin</artifactId>
+    <packaging>jar</packaging>
+
+    <name>z-script :: admin (Standalone Console App, NOT published to Central)</name>
+    <description>
+        Z-Script 独立可启动应用：脚本平台 + Mock 平台 + Web 控制台。
+        留 reactor 统一构建，不上 Maven Central。
+    </description>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <dependencies>
+        <!--
+            日志桥收敛：z-boot-web-starter -> spring-boot-starter-log4j2 带的是
+            log4j-slf4j-impl（SLF4J 1.x 桥），而 z-util-core 传递带 log4j-slf4j2-impl
+            （SLF4J 2.x 桥）。两者共存时 slf4j-api 1.7.36 会绑定到 2.x 桥并在启动早期抛
+            ClassNotFoundException: org.slf4j.spi.LoggingEventBuilder。
+            对每条传递路径都排除 2.x 桥，只保留与 Boot 2.7 配套的 1.x 桥（同 z-schedule-admin 踩坑）。
+
+            本模块刻意不引 z-ctc-web：中间件自带的控制台必须能独立跑起来，鉴权用 z-script
+            自己的 API Key（ApiKeyAuthInterceptor）。4A 由公司级入口（z-opc main-starter）
+            自行组装 —— 若在这里直接依赖 z-ctc-web，其 TenantContextFilter 会强依赖
+            SsoAutoConfiguration 提供的 JwtUtil，无法按需关闭。
+        -->
+        <!-- 本仓能力模块：web 已含 core + engine 的传递依赖，scene-http 提供 HTTP 链路编排 -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-script-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j2-impl</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-script-scene-http</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j2-impl</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+
+        <!-- 健康检查：/script/actuator/health → docker-compose & k8s 探针 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 前端两层：组件层 library build → 应用层 vite build（build:component 钩子已串好时序）
+                 无 node 环境时（CI 只发库 / Maven Central 校验）用 -Dfrontend.skip=true 跳过 -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>${frontend-maven-plugin.version}</version>
+                <configuration>
+                    <workingDirectory>${project.basedir}/../_frontend/z-script-frontend</workingDirectory>
+                    <installDirectory>${project.build.directory}/frontend</installDirectory>
+                    <skip>${frontend.skip}</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals><goal>install-node-and-npm</goal></goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <nodeVersion>${node.version}</nodeVersion>
+                            <npmVersion>${npm.version}</npmVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-install</id>
+                        <goals><goal>npm</goal></goals>
+                        <phase>generate-resources</phase>
+                        <configuration><arguments>install --no-audit --no-fund</arguments></configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-run-build</id>
+                        <goals><goal>npm</goal></goals>
+                        <phase>generate-resources</phase>
+                        <configuration><arguments>run build</arguments></configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- dist/ → target/classes/static/（在默认 resources 之后、repackage 之前） -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-frontend-dist</id>
+                        <phase>process-resources</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../_frontend/z-script-frontend/dist</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals><goal>repackage</goal></goals>
+                        <configuration>
+                            <classifier>exec</classifier>
+                            <mainClass>com.zifang.z.script.admin.ZScriptAdminApplication</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

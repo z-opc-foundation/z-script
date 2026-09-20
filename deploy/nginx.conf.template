@@ -1,0 +1,57 @@
+# Z-Script 前端 nginx 配置模板（docker-entrypoint 启动时由 envsubst 渲染）
+#
+# 关键反代：
+#   /api/* → http://${BACKEND_SERVICE}:8086/script/api/*
+#
+# 使用 nginx 官方 Alpine 镜像 + envsubst-on-templates.sh 标准模式。
+# BACKEND_SERVICE 通过 docker compose / k8s env 注入。
+
+server {
+    listen       80;
+    server_name  _;
+
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    # gzip（前端 bundle 通常几百 KB，gzip 后 < 50KB）
+    gzip on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript;
+
+    # 裸根路径跳到控制台（vite base 与 Spring Boot context-path 都是 /script）
+    location = / {
+        return 302 /script/;
+    }
+
+    # API 反代：前后端同用 /script/api 前缀，直接透传，不做路径重写
+    # （必须排在 /script/ 之前，nginx 前缀匹配取最长，两者不冲突但顺序更易读）
+    location /script/api/ {
+        proxy_pass         http://${BACKEND_SERVICE}:8086/script/api/;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header   Upgrade           $http_upgrade;
+        proxy_set_header   Connection        "upgrade";
+        proxy_read_timeout 60s;
+    }
+
+    # 前端 SPA 路由：非 /script/api 的路径一律回 index.html
+    location /script/ {
+        try_files $uri $uri/ /script/index.html;
+    }
+
+    # 健康检查端点（K8s livenessProbe / docker HEALTHCHECK）
+    location = /healthz {
+        access_log off;
+        return 200 "ok\n";
+        add_header Content-Type text/plain;
+    }
+
+    # 缓存静态资源（vite build 产物带 hash，可以长缓存）
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}

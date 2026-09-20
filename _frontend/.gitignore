@@ -1,0 +1,31 @@
+# _frontend/ 容器级 .gitignore
+# 两个子 npm 项目（z-script-frontend/ 与 z-script-frontend-component/）都继承本规则。
+
+# ===== npm 通用 =====
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== 构建产物 =====
+# 应用层 dist/ 由 admin pom 的 maven-resources-plugin 复制进 target/classes/static/，不入仓
+dist/
+**/dist/
+dist-ssr/
+**/.vite/
+
+# frontend-maven-plugin 在 target/ 下自装的 node
+node/
+**/node/
+
+# ===== 本地覆盖 =====
+*.local
+
+# ===== IDE / OS =====
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?
