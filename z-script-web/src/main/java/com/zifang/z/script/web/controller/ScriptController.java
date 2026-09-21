@@ -119,9 +119,11 @@ public class ScriptController {
     public Map<String, Object> create(@RequestBody Script script,
                                       @RequestHeader(value = "X-User-Id", required = false) String userId) {
         script.setCreatorId(userId);
-        // Auto-generate HTTP path if expose_as includes HTTP
+        // Auto-generate HTTP path if expose_as includes HTTP.
+        // 收敛到 /api/script-run/{code}（原本是 /run/{code}，与 /api/script-run 是同一件事的两扇门；
+        // 见 ScriptHttpDispatchController 与 ApiKeyAuthInterceptor.SCRIPT_CODE_MARKERS）。
         if ("HTTP".equals(script.getExposeAs()) || "BOTH".equals(script.getExposeAs())) {
-            script.setHttpPath("/run/" + script.getScriptCode());
+            script.setHttpPath("/api/script-run/" + script.getScriptCode());
         }
         // Auto-generate MCP tool name if expose_as includes MCP
         if ("MCP".equals(script.getExposeAs()) || "BOTH".equals(script.getExposeAs())) {

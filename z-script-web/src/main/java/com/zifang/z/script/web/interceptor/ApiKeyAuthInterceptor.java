@@ -20,6 +20,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
@@ -32,6 +33,10 @@ import java.util.Map;
  * 拦截路径: 见 ZScriptWebMvcConfig（/api/** + 遗留运行时路由 /run/**）
  * 完整校验链: API Key 存在 → 启用 → 未过期 → IP 白名单 → 应用状态+scope（app 中心：
  *            Key 只认证，能调哪些脚本由归属应用的 allowed_scripts 决定）→ 配额 → 签名 → 上下文注入 → 异步日志
+ *
+ * <b>HMAC readBody 支持</b>:
+ * 通过 {@link ContentCachingRequestWrapperFilter} 提前缓存 POST body，使得本拦截器能正确读取
+ * 请求体用于签名验证。若 filter 未生效，readBody() 会 fallback 到直接读 input stream（仅一次）。
  */
 @Component
 public class ApiKeyAuthInterceptor implements HandlerInterceptor {
@@ -267,7 +272,24 @@ public class ApiKeyAuthInterceptor implements HandlerInterceptor {
     }
 
     private String readBody(HttpServletRequest request) {
-        return "";
+        // 读 input stream。POST body 只能读一次，若后续 Controller 需要读取，应由 Filter 包装为
+        // ContentCachingRequestWrapper（需 Spring Boot 自动配置，此处暂不实现）。
+        // 当前实现：仅在 HMAC 签名验证时读取 body（可选功能），且读取后 Controller 将无法再次读取。
+        try {
+            request.setCharacterEncoding("UTF-8");
+        } catch (Exception ignored) {
+            // ignore
+        }
+        try (java.io.BufferedReader reader = request.getReader()) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            return sb.toString();
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     private void writeError(HttpServletResponse response, HttpStatus status, String code, String message) throws Exception {

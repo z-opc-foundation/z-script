@@ -515,9 +515,9 @@ WHERE k.app_id IS NULL;
 -- dsl_type 必须是 ScriptEngine 认得的 EL|GROOVY|LUA|SQL|MOCK|API_BRIDGE；
 -- 原先这里写的是 'python'，ScriptEngine 直接 "Unsupported DSL type" → 自检必挂。
 -- EL 走 ElSandbox 的 SpEL，入参以 #name 形式引用。
--- http_path 只做展示（真正可调的路径由 Controller 按 scriptCode 推导：/api/script-run/{code}
--- 与 /run/{code}）。写死成 /demo/hello 会让控制台显示一个谁都调不通的路径，故与
--- ScriptController.create/publish 自动生成的值保持一致。
+-- http_path 只做展示（真正可调的路径由 ScriptHttpDispatchController 按 scriptCode 推导：
+-- /api/script-run/{code}，唯一可调入口）。写死成 /demo/hello 会让控制台显示一个谁都调不通的路径，
+-- 故与 ScriptController.create/publish 自动生成的值保持一致。
 INSERT INTO `z_script`
 (`script_code`, `script_name`, `dsl_type`, `source_code`, `expose_as`, `http_path`, `input_schema`,
  `description`, `status`, `creator_id`, `tenant_code`)
@@ -526,7 +526,7 @@ SELECT 'hello_world',
        'EL',
        '\'hello, \' + #name + \'! @ z-script\'',
        'HTTP',
-       '/run/hello_world',
+       '/api/script-run/hello_world',
        '{"type":"object","properties":{"name":{"type":"string","default":"z-script"}}}',
        'E2E demo script for z-script console',
        1,

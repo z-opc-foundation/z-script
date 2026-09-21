@@ -304,6 +304,12 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
             return true;
         }
         if ("SPECIFIC".equals(scope)) {
+            // scriptCode=null 是管理面/版本/录制/场景等端点；它们不挂在任何具体脚本下，
+            // SPECIFIC 应用调到这些端点属于「控制台用途」，应当放行。
+            // 真正按脚本判断的场景是 /api/script-run/{code} 与 /run/{code}（见 ApiKeyAuthInterceptor.SCRIPT_CODE_MARKERS）。
+            if (scriptCode == null) {
+                return true;
+            }
             String allowed = apiKey.getAllowedScripts();
             if (allowed == null || allowed.isEmpty()) {
                 return false;

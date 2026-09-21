@@ -64,13 +64,19 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, AppDO> implements App
             return true;
         }
         if ("SPECIFIC".equals(scope)) {
+            // scriptCode=null 是管理面端点（脚本列表/版本/录制/场景 等），
+            // SPECIFIC 应用的控制台必然要调这些端点才能看到/管理自己被授权的脚本，
+            // 因此 null 放行；具体脚本的访问限定只作用在 /api/script-run/{code} 与 /run/{code}。
+            if (scriptCode == null) {
+                return true;
+            }
             String allowed = app.getAllowedScripts();
             if (allowed == null || allowed.isEmpty()) {
                 return false;
             }
             try {
                 List<String> scripts = JsonUtil.fromJson(allowed, List.class);
-                return scripts != null && scriptCode != null && scripts.contains(scriptCode);
+                return scripts != null && scripts.contains(scriptCode);
             } catch (Exception e) {
                 log.error("应用 allowed_scripts 解析失败: appCode={}, allowed={}", app.getAppCode(), allowed, e);
                 return false;
