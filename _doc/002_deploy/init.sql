@@ -116,6 +116,7 @@ CREATE TABLE IF NOT EXISTS `z_script_tag_rel`
 CREATE TABLE IF NOT EXISTS `z_script_api_key`
 (
     `id`                        BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
+    `app_id`                    BIGINT       DEFAULT NULL COMMENT '归属 z_script_app.id（权限中心；NULL=未回填的存量 Key）',
     `api_key`                   VARCHAR(64)  NOT NULL COMMENT 'API Key 标识 (zsk_live_xxx)',
     `api_secret_hash`           VARCHAR(128) NOT NULL COMMENT 'Secret 的 SHA256 哈希 (不存明文)',
     `app_name`                  VARCHAR(128) NOT NULL COMMENT '调用方应用名',
@@ -140,6 +141,28 @@ CREATE TABLE IF NOT EXISTS `z_script_api_key`
     KEY `idx_app_name` (`app_name`),
     KEY `idx_status` (`status`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = 'z-script API Key';
+
+-- ------------------------------------------------------------
+-- 5b. z_script_app - 应用主表（权限模型的中心：AK 挂应用，脚本列表挂应用）
+--     鉴权链: X-Api-Key → z_script_api_key.app_id → 这里 → scope/allowed_scripts
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `z_script_app`
+(
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
+    `app_code`        VARCHAR(128) NOT NULL COMMENT '应用编码 (唯一; 签 Key 时的 appName 即 appCode)',
+    `app_name`        VARCHAR(128) DEFAULT NULL COMMENT '应用显示名',
+    `owner_id`        VARCHAR(64)  DEFAULT NULL COMMENT '负责人 ID',
+    `scope`           VARCHAR(32)  DEFAULT 'ALL' COMMENT '权限范围: ALL|SPECIFIC (READ_ONLY 兼容保留)',
+    `allowed_scripts` TEXT         DEFAULT NULL COMMENT 'SPECIFIC 模式下的 script_code 列表 (JSON)',
+    `status`          TINYINT      DEFAULT 1 COMMENT '1=启用 0=禁用 (禁用后名下所有 Key 一并 403)',
+    `description`     VARCHAR(512) DEFAULT NULL COMMENT '备注',
+    `create_time`     DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`     DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `tenant_code`     VARCHAR(64)  DEFAULT 'default' COMMENT '租户编码',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_app_code` (`app_code`),
+    KEY `idx_status` (`status`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = 'z-script 应用 (AK 与脚本列表都挂在这里)';
 
 -- ------------------------------------------------------------
 -- 6. z_script_quota - 配额限流 (entity: QuotaDO)
@@ -452,6 +475,36 @@ CREATE TABLE IF NOT EXISTS `z_mock_request_log`
     KEY `idx_matched` (`matched`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COMMENT = 'Mock 请求日志';
+
+-- ============================================================
+-- 存量库升级（全新库可跳过；本段幂等，可重复执行）
+-- 老库的 z_script_api_key 没有 app_id 列（MySQL 不支持 ADD COLUMN IF NOT EXISTS，
+-- 用 information_schema + PREPARE 守住幂等），并把存量 Key 回填出对应的应用行。
+-- ============================================================
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
+                   WHERE TABLE_SCHEMA = DATABASE()
+                     AND TABLE_NAME = 'z_script_api_key'
+                     AND COLUMN_NAME = 'app_id');
+SET @ddl = IF(@col_exists = 0,
+    'ALTER TABLE `z_script_api_key` ADD COLUMN `app_id` BIGINT DEFAULT NULL COMMENT ''归属 z_script_app.id'' AFTER `id`',
+    'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 由存量 Key 的 appName 回填应用（appName 即 appCode）
+INSERT INTO `z_script_app` (`app_code`, `app_name`, `owner_id`, `scope`, `allowed_scripts`, `status`, `description`, `tenant_code`)
+SELECT k.app_name, k.app_name, COALESCE(k.owner_id, 'system'), COALESCE(k.scope, 'ALL'), NULL, 1,
+       'init.sql 由存量 API Key 回填', 'default'
+FROM (SELECT DISTINCT app_name, MAX(owner_id) AS owner_id, MAX(scope) AS scope
+      FROM z_script_api_key GROUP BY app_name) k
+WHERE NOT EXISTS (SELECT 1 FROM z_script_app a WHERE a.app_code = k.app_name);
+
+-- 存量 Key 挂到应用上（沿用 Key 自己的 scope 语义，判定行为不变）
+UPDATE `z_script_api_key` k
+    JOIN `z_script_app` a ON a.app_code = k.app_name
+SET k.app_id = a.id
+WHERE k.app_id IS NULL;
 
 -- ============================================================
 -- 种子数据 (幂等: 唯一键已存在则跳过, 不覆盖用户改动)

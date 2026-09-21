@@ -32,7 +32,7 @@ export JAVA_HOME_17=/Users/zifang/Library/Java/JavaVirtualMachines/amazon-corret
 ### 本地开发（有 node，前端一起打进 jar）
 
 ```bash
-# 1. 建库 + 建表 + 种子数据（16 张表 + 3 条 seed）
+# 1. 建库 + 建表 + 种子数据（17 张表 + 3 条 seed）
 mysql -h127.0.0.1 -P3306 -uroot -e "CREATE DATABASE IF NOT EXISTS z_script CHARACTER SET utf8mb4"
 mysql -h127.0.0.1 -P3306 -uroot z_script < _doc/002_deploy/init.sql
 
@@ -83,11 +83,13 @@ Z_BASE_DB_SCRIPT_PORT=13306 java -jar ../z-script-admin/target/z-script-admin-1.
 所以键是 `z.base.db.script.*` 而 **不是** `spring.datasource.*` —— 写错不报错，
 会静默回落到 `localhost/root/空密码/z_script`，是孵化前最难查的一类故障。
 
-## 鉴权：只有 app + AK
+## 鉴权：只有 app + AK（应用是权限中心）
 
 z-script 不接 z-ctc 4A / SSO，也没有登录页。控制台与被调用方走同一套 `X-Api-Key`。
+管理模型是**应用为中心**：AK 挂在应用下（一个应用多把 Key，可随时重置吊销），
+应用挂「可访问脚本列表」—— Key 只认证，能调什么由应用决定。
 
-引导（唯一免鉴权端点，`ZScriptWebMvcConfig` 的精确 exclude）：
+引导（唯一免鉴权端点，`ZScriptWebMvcConfig` 的精确 exclude；应用不存在会随签 Key 自动创建）：
 
 ```bash
 curl -s -X POST http://localhost:8086/script/api/script/api-key \
@@ -110,13 +112,15 @@ curl -s "http://localhost:8086/script/api/script/list" -H "X-Api-Key: $KEY"
 | 3   | 启用状态        | `API_KEY_DISABLED` | 401  |
 | 4   | 过期时间        | `API_KEY_EXPIRED`  | 401  |
 | 5   | IP 白名单（支持 CIDR） | `IP_NOT_ALLOWED`   | 403  |
-| 6   | scope       | `SCOPE_NOT_ALLOWED` | 403  |
+| 6   | 应用状态 + scope | `APP_DISABLED` / `SCOPE_NOT_ALLOWED` | 403  |
 | 7   | 配额          | `QUOTA_EXCEEDED`（带 `Retry-After`） | 429 |
 | 8   | 签名（可选）      | `INVALID_SIGNATURE` | 401  |
 
 - **默认拒绝**：拦 `/api/**` 与历史运行时路由 `/run/**`，新增 Controller 只要落在 `/api` 下就自动受保护。
-- `scope`：`ALL` / `READ_ONLY`（当前等价 ALL）/ `SPECIFIC`（配 `allowed_scripts` JSON 数组，元素是 scriptCode）。
-  管理面端点解析不出 scriptCode，`SPECIFIC` 的 Key 调不到控制台用的 `list/publish` —— 给控制台用的 Key 保持 `ALL`。
+- **应用决定权限**：Key → `app_id` → `z_script_app`；`scope=ALL` 放行全部脚本，
+  `SPECIFIC` 只放行 `allowed_scripts` 里的 scriptCode；应用 `status=0` 时名下所有 Key 403 `APP_DISABLED`。
+  存量 Key 找不到应用时回退到 Key 自己的 scope 列（兼容 `init.sql` 升级前的库）。
+- 管理面端点解析不出 scriptCode，`SPECIFIC` 的应用调不到 `list/publish` —— 给控制台用的应用保持 `ALL`。
 - 签名：同时带 `X-Timestamp`（毫秒，±5min 容差）和 `X-Signature` 才校验。
   串为 `method + "\n" + path + "\n" + timestamp + "\n" + body`，HMAC-SHA256 key 是 `api_secret_hash`
   （不是明文 secret）。⚠️ 服务端 `readBody()` 目前恒返回 `""`，所以带请求体的 POST 无法验签通过 ——
@@ -127,9 +131,15 @@ curl -s "http://localhost:8086/script/api/script/list" -H "X-Api-Key: $KEY"
 
 | Method       | Path（省略 `/script` 前缀）                    | 用途                                  |
 |--------------|--------------------------------------------|-------------------------------------|
-| `POST`       | `/api/script/api-key`                      | 签发 Key（唯一免鉴权）                        |
+| `POST`       | `/api/script/api-key`                      | 签发 Key（唯一免鉴权；应用不存在会自动创建）           |
 | `GET`        | `/api/script/api-key/page`                 | Key 分页                              |
 | `POST`       | `/api/script/api-key/{id}/reset-secret`    | 重置 secret（明文同样只返回一次）                 |
+| `GET`        | `/api/script/app/list`                     | 应用列表                                |
+| `POST`       | `/api/script/app`                          | 创建应用（appCode 必填）                     |
+| `PUT`        | `/api/script/app?appCode=`                 | 更新应用 / 启用禁用（status）                  |
+| `POST`       | `/api/script/app/scripts?appCode=`         | 配置应用的可访问脚本列表                         |
+| `POST`       | `/api/script/app/{appCode}/enable\|disable` | 启用/禁用应用（名下 Key 一并 403/恢复）           |
+| `DELETE`     | `/api/script/app?appCode=`                 | 删除应用（名下还有 Key 时拒绝）                   |
 | `GET`        | `/api/script/list?dslType=\|exposeAs=`   | 列表（两参二选一，同时给以 dslType 为准）        |
 | `GET`        | `/api/script/byCode?scriptCode=`           | 详情                                  |
 | `POST`       | `/api/script`                              | 创建（`exposeAs` 含 HTTP 时自动生成 httpPath） |
@@ -165,13 +175,15 @@ curl -s "http://localhost:8086/script/api/script/list" -H "X-Api-Key: $KEY"
 
 ## 数据库
 
-`_doc/002_deploy/init.sql`，16 张表 + 3 条幂等 seed（`hello_world` 演示脚本、`default` Mock 环境、
+`_doc/002_deploy/init.sql`，17 张表 + 3 条幂等 seed（`hello_world` 演示脚本、`default` Mock 环境、
 一个 Mock 端点），全部 `WHERE NOT EXISTS` 保护，可重复执行、不覆盖用户改动。
+存量库升级（16 表时代建的库）也幂等：自动补 `z_script_api_key.app_id` 列、
+由存量 Key 回填 `z_script_app` 行，重复执行不产生副作用。
 
 | 分组 | 表                                               |
 |----|--------------------------------------------------|
+| 应用与鉴权 | `z_script_app`（权限中心：scope/脚本列表挂应用）、`z_script_api_key`（app_id 挂应用）、`z_script_quota` |
 | 脚本 | `z_script`、`z_script_version`、`z_script_tag`、`z_script_tag_rel` |
-| 鉴权/配额 | `z_script_api_key`、`z_script_quota`             |
 | 日志 | `z_script_invoke_log`（调用）、`z_script_execution_log`（执行） |
 | Mock | `z_mock_environment`、`z_mock_endpoint`、`z_mock_scenario`、`z_mock_scenario_state`、`z_mock_test_case`、`z_mock_recording`、`z_mock_recording_request`、`z_mock_request_log` |
 
@@ -212,7 +224,8 @@ invoke_params, invoke_status, http_status, duration_ms, error_message, invoked_a
 | 启动报 `expected single matching bean but found 2` | classpath 上混进第二个自带 SqlSessionFactory 的模块；`application.yml` 已 exclude MP 自动配置，检查新加的依赖 |
 | `/script/` 404                            | 用 `-Dfrontend.skip=true` 打的包，或改了 `context-path` 没同步 vite `base` |
 | 所有接口 401 `MISSING_API_KEY`                 | 没带 `X-Api-Key`；控制台需要先签发/粘贴 AK                              |
-| `SCOPE_NOT_ALLOWED` 但 code 在 allowed 列表里   | Key 的 `scope=SPECIFIC` 且调的是管理面（解析不出 scriptCode），改回 `ALL`    |
+| `SCOPE_NOT_ALLOWED` 但脚本看着没限制                | Key 归属应用是 `SPECIFIC`（脚本列表在控制台「应用」页签配），且调的是管理面（解析不出 scriptCode）；控制台用的应用保持 `ALL` |
+| 403 `APP_DISABLED`                        | Key 归属应用被禁用；控制台「应用」页签或 `POST /api/script/app/{appCode}/enable` 恢复 |
 | 带 body 的签名请求全 401 `INVALID_SIGNATURE`       | 已知限制：服务端不读 body，见「鉴权」小节                                       |
 | 429 `QUOTA_EXCEEDED`                      | 默认 60/分、10000/天（`z_script_quota`），看 `Retry-After`            |
 | 调用日志为空                                    | 异步线程写失败会吞异常；先确认 `z_script_invoke_log` 可写，再看 root 日志级别         |

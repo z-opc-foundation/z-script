@@ -3,9 +3,11 @@ package com.zifang.z.script.web.interceptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zifang.util.core.json.JsonMapperFactory;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
+import com.zifang.z.script.core.domain.entity.AppDO;
 import com.zifang.z.script.core.domain.entity.InvokeLogDO;
 import com.zifang.z.script.core.domain.entity.QuotaDO;
 import com.zifang.z.script.core.domain.service.ApiKeyService;
+import com.zifang.z.script.core.domain.service.AppService;
 import com.zifang.z.script.core.domain.service.InvokeLogService;
 import com.zifang.z.script.core.domain.service.QuotaService;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +30,8 @@ import java.util.Map;
  * z-script API Key 鉴权拦截器 (FEATURE051)
  * <p>
  * 拦截路径: 见 ZScriptWebMvcConfig（/api/** + 遗留运行时路由 /run/**）
- * 完整校验链: API Key 存在 → 启用 → 未过期 → IP 白名单 → scope → 配额 → 签名 → 上下文注入 → 异步日志
+ * 完整校验链: API Key 存在 → 启用 → 未过期 → IP 白名单 → 应用状态+scope（app 中心：
+ *            Key 只认证，能调哪些脚本由归属应用的 allowed_scripts 决定）→ 配额 → 签名 → 上下文注入 → 异步日志
  */
 @Component
 public class ApiKeyAuthInterceptor implements HandlerInterceptor {
@@ -90,9 +93,23 @@ public class ApiKeyAuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // ========== 6. Scope 校验 (允许访问的脚本) ==========
+        // ========== 6. Scope 校验（app 中心：Key 只认证，能调什么由归属应用决定） ==========
         String scriptCode = extractScriptCode(request);
-        if (!apiKeyService.verifyScope(entity, scriptCode)) {
+        AppDO app = resolveApp(entity);
+        if (app != null) {
+            if (app.getStatus() == null || app.getStatus() != 1) {
+                recordLog(request, entity, scriptCode, null, remoteIp, false, 403, startMs, "APP_DISABLED");
+                writeError(response, HttpStatus.FORBIDDEN, "APP_DISABLED", "应用已禁用: " + app.getAppCode());
+                return false;
+            }
+            if (!appService.verifyScope(app, scriptCode)) {
+                recordLog(request, entity, scriptCode, null, remoteIp, false, 403, startMs, "SCOPE_NOT_ALLOWED");
+                writeError(response, HttpStatus.FORBIDDEN, "SCOPE_NOT_ALLOWED",
+                        "应用 " + app.getAppCode() + " 无权访问该脚本");
+                return false;
+            }
+        } else if (!apiKeyService.verifyScope(entity, scriptCode)) {
+            // 兜底：app_id 与按 appName 反查都找不到应用（init.sql 回填前的存量库），退回 Key 自己的 scope
             recordLog(request, entity, scriptCode, null, remoteIp, false, 403, startMs, "SCOPE_NOT_ALLOWED");
             writeError(response, HttpStatus.FORBIDDEN, "SCOPE_NOT_ALLOWED", "API Key 无权访问该脚本");
             return false;
@@ -187,6 +204,20 @@ public class ApiKeyAuthInterceptor implements HandlerInterceptor {
 
     /** 动态路由里脚本标识紧跟在这几个前缀之后；取到下一段为止。 */
     private static final String[] SCRIPT_CODE_MARKERS = {"/script-run/", "/run/", "/mock/"};
+
+    @Autowired
+    private AppService appService;
+
+    /** Key 归属的应用：先按 app_id，再按 appName（= appCode）反查；都没有才返回 null（走 Key 自身 scope）。 */
+    private AppDO resolveApp(ApiKeyDO entity) {
+        if (entity.getAppId() != null) {
+            AppDO byId = appService.getById(entity.getAppId());
+            if (byId != null) {
+                return byId;
+            }
+        }
+        return appService.getByAppCode(entity.getAppName());
+    }
 
     private String extractScriptCode(HttpServletRequest request) {
         String uri = request.getRequestURI();

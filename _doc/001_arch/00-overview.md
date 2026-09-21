@@ -55,16 +55,23 @@ ApiKeyAuthInterceptor.preHandle  （顺序即语义，任一步失败立即 401/
 > 为什么必须是黑名单而不是逐条点名：孵化前这里是 `addPathPatterns("/api/script/**", "/api/mock/**")`
 > 一类写法，整套 `/api/mock-platform/**` 管理面**静默免鉴权**。加接口的人不会记得回来补点名。
 
-AK 的 `appName` 绑定在 `z_script_api_key` 上，一个 app 可有多把 Key；`secret` 只在创建/重置时明文返回一次，
-库里存的是密文（`ApiKeyServiceImpl`），所以 `init.sql` **刻意不预置任何 Key**（凭证不入仓，见 lead/008）。
+AK 绑定在 `z_script_app` 上（`z_script_api_key.app_id`，appName 即 appCode），一个应用可有多把 Key；
+`secret` 只在创建/重置时明文返回一次，库里存的是密文（`ApiKeyServiceImpl`），所以 `init.sql` **刻意不预置任何 Key**
+（凭证不入仓，见 lead/008）。签 Key 时应用不存在会自动引导创建（`AppService.findOrCreate`），
+scope 取签 Key 请求里的值——控制台传 `ALL`，因此引导路径不会被自己的 SPECIFIC 列表锁死。
 
-## 4. 数据模型（16 表，与 `@TableName` 一一对应）
+## 4. 数据模型（17 表，与 `@TableName` 一一对应）
 
 | 组 | 表 |
 |---|---|
+| 应用与治理 | `z_script_app`（权限中心）、`z_script_api_key`、`z_script_quota`、`z_script_invoke_log` |
 | 脚本 | `z_script`、`z_script_version`、`z_script_tag`、`z_script_tag_rel`、`z_script_execution_log` |
-| 凭证与治理 | `z_script_api_key`、`z_script_quota`、`z_script_invoke_log` |
 | Mock | `z_mock_endpoint`、`z_mock_environment`、`z_mock_scenario`、`z_mock_scenario_state`、`z_mock_test_case`、`z_mock_recording`、`z_mock_recording_request`、`z_mock_request_log` |
+
+**应用是权限模型的中心**（用户定的玩法）：AK 只是应用的凭证——一个应用可签发多把、随时重置吊销；
+应用挂 `scope`（ALL/SPECIFIC）与 `allowed_scripts`（scriptCode 的 JSON 数组），
+拦截器按 `Key → app_id → 应用` 解析权限，Key 自身这两列仅作存量库回退。
+禁用应用 = 名下所有 Key 一并 `APP_DISABLED`；删应用时名下还有 Key 会被拒绝。
 
 建库脚本 [`../002_deploy/init.sql`](../002_deploy/init.sql)：幂等（`CREATE TABLE IF NOT EXISTS` +
 `INSERT ... SELECT ... WHERE NOT EXISTS`），末尾带一段 `information_schema` 自检查询，可反复执行。
@@ -140,7 +147,7 @@ AK 的 `appName` 绑定在 `z_script_api_key` 上，一个 app 可有多把 Key�
 - `unpublish` 不清 `httpPath`（MyBatis-Plus `updateById` 忽略 null 字段），前端已按 `exposeAs` 规避显示。
 - HMAC 签名校验的 `readBody()` 是空实现（恒 `""`），因此带请求体的 POST 只要发 `X-Signature` 就必 401；
   现阶段签名只对 GET / 无体请求可用。要真用签名需先套 `ContentCachingRequestWrapper`（注意 body 只能读一次）。
-- `scope` 的 scriptCode 是从 URI 里解析的，管理面端点解析不出 → `SPECIFIC` 的 Key 调不到 `list/publish`；
-  给控制台用的 Key 应保持 `ALL`。`READ_ONLY` 目前是空实现（与 ALL 等价），写操作并没有被收窄。
+- scriptCode 是从 URI 里解析的，管理面端点解析不出 → `SPECIFIC` 的应用调不到 `list/publish`；
+  给控制台用的应用应保持 `ALL`。`READ_ONLY` 目前是空实现（与 ALL 等价），写操作并没有被收窄。
 - 控制台目前只覆盖「脚本列表 + Mock 端点列表 + 执行/上下线 + 签发 AK」，
   版本灰度、场景状态机、录制回放还没有 UI；组件库按 props-only 约定继续加即可。

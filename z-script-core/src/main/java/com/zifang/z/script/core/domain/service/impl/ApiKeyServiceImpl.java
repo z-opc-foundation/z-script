@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zifang.util.core.lang.RandomUtil;
 import com.zifang.util.json.JsonUtil;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
+import com.zifang.z.script.core.domain.entity.AppDO;
 import com.zifang.z.script.core.domain.mapper.ApiKeyMapper;
 import com.zifang.z.script.core.domain.service.ApiKeyService;
+import com.zifang.z.script.core.domain.service.AppService;
 import com.zifang.z.script.core.domain.service.QuotaService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,6 +54,9 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     @Autowired
     @Lazy
     private QuotaService quotaService;
+    @Autowired
+    @Lazy
+    private AppService appService;
 
     private static String sha256Hex(String input) {
         try {
@@ -150,6 +155,10 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
      */
     @Override
     public ApiKeyDO createApiKey(String appName, String ownerId, String scope, String description) {
+        // 0. Key 挂在应用上：应用不存在就随签 Key 引导建出来（appName 即 appCode）。
+        //    能调什么由应用的 scope/allowed_scripts 决定，Key 自身这两列只作老数据兼容保留。
+        AppDO app = appService.findOrCreate(appName, ownerId, scope);
+
         // 1. 生成 API Key
         String apiKey = API_KEY_PREFIX + RandomUtil.uuidShort(24);
 
@@ -163,6 +172,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
         // 4. 入库
         ApiKeyDO entity = new ApiKeyDO();
         entity.setApiKey(apiKey);
+        entity.setAppId(app.getId());
         entity.setApiSecretHash(secretHash);
         entity.setAppName(appName);
         entity.setOwnerId(ownerId);

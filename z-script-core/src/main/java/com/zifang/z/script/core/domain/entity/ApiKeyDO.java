@@ -25,6 +25,12 @@ public class ApiKeyDO {
     private String apiKey;
 
     /**
+     * 归属应用 id（权限模型的中心：能调什么由应用决定，Key 只负责认证）
+     */
+    @TableField("app_id")
+    private Long appId;
+
+    /**
      * Secret 的 SHA256 哈希 (不存明文)
      */
     private String apiSecretHash;
@@ -117,6 +123,14 @@ public class ApiKeyDO {
 
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
+    }
+
+    public Long getAppId() {
+        return appId;
+    }
+
+    public void setAppId(Long appId) {
+        this.appId = appId;
     }
 
     public String getApiSecretHash() {

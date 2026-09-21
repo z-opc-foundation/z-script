@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Layout, Tabs, Typography, Button, Space, Input, message, Alert } from 'antd';
-import { ScriptListView, MockEndpointListView } from '@yuku123/z-script-frontend-component';
+import { Layout, Tabs, Typography, Button, Space, Input, message, Alert, Modal, Select, Radio } from 'antd';
+import { ScriptListView, MockEndpointListView, AppListView } from '@yuku123/z-script-frontend-component';
 
 const { Header, Content } = Layout;
 
@@ -26,8 +26,13 @@ export default function App() {
   const [appName, setAppName] = useState('console');
   const [scripts, setScripts] = useState([]);
   const [endpoints, setEndpoints] = useState([]);
+  const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // 「配置脚本」弹窗状态：null=关闭；编辑的是应用的 scope + allowed_scripts
+  const [editApp, setEditApp] = useState(null);
+  const [editScope, setEditScope] = useState('SPECIFIC');
+  const [editScripts, setEditScripts] = useState([]);
 
   const headers = useCallback(
     () => ({ 'Content-Type': 'application/json', ...(apiKey ? { 'X-Api-Key': apiKey } : {}) }),
@@ -61,9 +66,14 @@ export default function App() {
         if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
         return rowsOf(await res.json());
       };
-      const [s, m] = await Promise.all([grab('script/list'), grab('mock-platform/endpoints/list')]);
+      const [s, m, a] = await Promise.all([
+        grab('script/list'),
+        grab('mock-platform/endpoints/list'),
+        grab('script/app/list'),
+      ]);
       setScripts(s);
       setEndpoints(m);
+      setApps(a);
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -123,6 +133,44 @@ export default function App() {
     if (ok) load();
   };
 
+  // 应用启停：禁用后该应用名下所有 Key 一并 403（APP_DISABLED）
+  const toggleApp = async (row, next) => {
+    const res = await request(`script/app?appCode=${encodeURIComponent(row.appCode)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: next ? 1 : 0 }),
+    });
+    const body = await res.json().catch(() => ({}));
+    const ok = res.ok && body.success !== false;
+    message[ok ? 'success' : 'error'](`${row.appCode} ${next ? '启用' : '禁用'}${ok ? ' ok' : ` 失败: ${body.message || res.status}`}`);
+    if (ok) load();
+  };
+
+  const openEditScripts = (row) => {
+    let parsed = [];
+    try {
+      parsed = JSON.parse(row.allowedScripts || '[]');
+    } catch (e) {
+      parsed = [];
+    }
+    setEditApp(row);
+    setEditScope(row.scope === 'ALL' ? 'ALL' : 'SPECIFIC');
+    setEditScripts(Array.isArray(parsed) ? parsed : []);
+  };
+
+  const saveAppScripts = async () => {
+    const res = await request(`script/app/scripts?appCode=${encodeURIComponent(editApp.appCode)}`, {
+      method: 'POST',
+      body: JSON.stringify({ scope: editScope, scripts: editScripts }),
+    });
+    const body = await res.json().catch(() => ({}));
+    const ok = res.ok && body.success !== false;
+    message[ok ? 'success' : 'error'](`${editApp.appCode} 脚本列表${ok ? '已保存' : `保存失败: ${body.message || res.status}`}`);
+    if (ok) {
+      setEditApp(null);
+      load();
+    }
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -171,6 +219,13 @@ export default function App() {
           defaultActiveKey="scripts"
           items={[
             {
+              key: 'apps',
+              label: `应用 (${apps.length})`,
+              children: (
+                <AppListView apps={apps} loading={loading} onEditScripts={openEditScripts} onToggle={toggleApp} />
+              ),
+            },
+            {
               key: 'scripts',
               label: `脚本 (${scripts.length})`,
               children: (
@@ -189,6 +244,31 @@ export default function App() {
             },
           ]}
         />
+        <Modal
+          title={`配置脚本 — ${editApp?.appCode || ''}`}
+          open={!!editApp}
+          onOk={saveAppScripts}
+          onCancel={() => setEditApp(null)}
+          okText="保存"
+          cancelText="取消"
+          destroyOnClose
+        >
+          <Space direction="vertical" style={{ width: '100%' }} size={12}>
+            <Radio.Group value={editScope} onChange={(e) => setEditScope(e.target.value)}>
+              <Radio.Button value="ALL">全部脚本</Radio.Button>
+              <Radio.Button value="SPECIFIC">指定列表</Radio.Button>
+            </Radio.Group>
+            <Select
+              mode="multiple"
+              style={{ width: '100%' }}
+              placeholder={editScope === 'ALL' ? 'ALL 模式下无需选择' : '选择该应用可调用的脚本'}
+              disabled={editScope === 'ALL'}
+              value={editScripts}
+              onChange={setEditScripts}
+              options={scripts.map((s) => ({ value: s.scriptCode, label: `${s.scriptCode}（${s.dslType}）` }))}
+            />
+          </Space>
+        </Modal>
       </Content>
     </Layout>
   );

@@ -11,7 +11,7 @@
 
 ```
 z-script (aggregator, pom)            → io.github.yuku123:z-script
-├─ z-script-core                      → 领域层：16 张表的实体 + MyBatis-Plus Mapper + Service
+├─ z-script-core                      → 领域层：17 张表的实体 + MyBatis-Plus Mapper + Service
 ├─ z-script-engine                    → 引擎层：ScriptEngine / 各 DSL Sandbox / Mock 引擎 / 断言 / 录制回放
 ├─ z-script-web                       → Starter 层：18 个 Controller + API Key 拦截器 + 自动装配
 ├─ z-script-scene (aggregator, pom)
@@ -52,21 +52,32 @@ z:
         password: ${Z_BASE_DB_SCRIPT_PASSWORD}
 ```
 
-建库：`mysql -h<host> -uroot -p < _doc/002_deploy/init.sql`（幂等，16 张表 + demo 脚本/端点）。
+建库：`mysql -h<host> -uroot -p < _doc/002_deploy/init.sql`（幂等，17 张表 + demo 脚本/端点）。
 
-## 鉴权：只有 app + AK 一种
+## 鉴权：只有 app + AK 一种（应用是权限中心）
 
 z-script **不挂 4A / SSO**，自带鉴权。外部调用方与它自己的控制台走同一套：请求头 `X-Api-Key`。
 
+管理模型是 **应用为中心**：先建应用，AK 挂在应用下（一个应用可签发多把、随时重置吊销），
+应用再挂一份「可访问脚本列表」—— 这批 Key 能调什么由应用说了算，Key 本身只负责认证。
+
 ```bash
-# 1. 引导：唯一免鉴权端点（此时调用方手上还没有 Key）。secret 只在这一次返回
+# 1. 引导：唯一免鉴权端点（此时调用方手上还没有 Key）。
+#    应用不存在会随签 Key 自动创建；secret 只在这一次返回
 curl -X POST http://localhost:8086/script/api/script/api-key \
      -H 'Content-Type: application/json' \
      -d '{"appName":"z-qa","scope":"ALL","description":"QA 平台调用"}'
 
 # 2. 之后一律带 AK
 curl -H "X-Api-Key: zsk_live_xxx" http://localhost:8086/script/api/script/list
+
+# 3. 治理：给应用配脚本列表（scope=SPECIFIC + scriptCode 数组）
+curl -X POST 'http://localhost:8086/script/api/script/app/scripts?appCode=z-qa' \
+     -H "X-Api-Key: zsk_live_xxx" -H 'Content-Type: application/json' \
+     -d '{"scope":"SPECIFIC","scripts":["hello_world"]}'
 ```
+
+禁用应用 → 名下所有 Key 一并 403 `APP_DISABLED`；scope=SPECIFIC 时只放行列表内的 scriptCode。
 
 默认拒绝：`/api/**` 与历史运行时路由 `/run/**` 全量拦截（状态、过期、IP 白名单、scope、配额、可选 HMAC 签名逐条校验），
 每次调用（含被拒的）异步落 `z_script_invoke_log`。不带 Key 的业务请求一律 401 —— 控制台也一样。
@@ -134,7 +145,7 @@ API Key 也不预置在 `init.sql` 中（由引导端点或控制台现场签发
 
 - [`_doc/001_arch/00-overview.md`](_doc/001_arch/00-overview.md) — 模块边界、鉴权模型、孵化期间的整改记录
 - [`_doc/002_deploy/z-script-admin.md`](_doc/002_deploy/z-script-admin.md) — 运行手册（启动 / 配置 / 鉴权 / API 速查 / 故障排查）
-  · [`init.sql`](_doc/002_deploy/init.sql) — 16 表 + 幂等 seed
+  · [`init.sql`](_doc/002_deploy/init.sql) — 17 表 + 幂等 seed
 - [`_doc/003_script/`](_doc/003_script/) — 构建 / 打包 / 发布脚本
 - [`_doc/004_skill/audit-incubation-1.0.0.md`](_doc/004_skill/audit-incubation-1.0.0.md) — 孵化入库审计（含 2 个已修的鉴权面缺陷）
 - [`_frontend/README.md`](_frontend/README.md) — 前端两层工程与 vite base 约定
