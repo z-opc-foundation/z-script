@@ -1,0 +1,13 @@
+# 构建镜像只需要 jar、前端 dist 与 deploy/ 模板；其余全是拖慢 context 上传的杂物
+.git
+.github
+.idea
+**/node_modules
+**/target
+!z-script-admin/target/z-script-admin-1.0.0-exec.jar
+**/dist
+!_frontend/z-script-frontend/dist
+_doc
+_frontend/z-script-frontend/node
+*.log
+.DS_Store

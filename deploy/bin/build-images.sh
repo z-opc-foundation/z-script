@@ -43,6 +43,11 @@ docker build $NO_CACHE \
 
 echo ""
 echo "=== Step 3/3: 构建前端镜像（${OCI_REGISTRY}/z-script-frontend:${IMAGE_VERSION}）==="
+# dist 由 step 1 的 mvn package（frontend-maven-plugin → vite build）产出；容器里不再装 node
+if [ ! -f "_frontend/z-script-frontend/dist/index.html" ]; then
+    echo "缺少 _frontend/z-script-frontend/dist/index.html —— 先跑 step 1 的 mvn package（不要带 -Dfrontend.skip=true）" >&2
+    exit 1
+fi
 docker build $NO_CACHE \
     -f deploy/Dockerfile.frontend \
     -t "${OCI_REGISTRY}/z-script-frontend:${IMAGE_VERSION}" \

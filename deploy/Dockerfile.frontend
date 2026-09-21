@@ -1,29 +1,16 @@
 # Z-Script 前端 nginx 镜像（Mode 2 分体 / Mode 3 集群用）
-# 输入：_frontend/z-script-frontend/dist/（vite build 产物）
+# 输入：_frontend/z-script-frontend/dist/（vite build 产物，build-images.sh 的 step 1 已产出）
 # 输出：nginx 静态服务 + /api 反代到 backend
 #
-# 构建前置：
-#   (cd ../_frontend/z-script-frontend && npm ci && npm run build)
+# 为什么不在容器里跑 vite build：SPA 依赖旁侧的 z-script-frontend-component（file: 依赖 +
+# vite alias 指向 ../z-script-frontend-component/dist/index.js），单拷 SPA 目录必然构建失败；
+# 而宿主侧 admin 的 package（frontend-maven-plugin）已经把两层时序串好并产出 dist，
+# 镜像里再装一遍 node 只会更慢。改 dist 后重跑 mvn package 再打镜像即可。
 #
-# 构建命令：
+# 构建命令（仓库根为 context）：
 #   docker build -f deploy/Dockerfile.frontend \
-#     -t ghcr.io/yuku123/z-script-frontend:1.0.0 ..
+#     -t ghcr.io/yuku123/z-script-frontend:1.0.0 .
 
-# ---- 构建阶段：基于 node 跑 vite build ----
-FROM node:18-alpine AS builder
-
-WORKDIR /build
-
-# 仅拷 package.json 利用 docker layer 缓存
-COPY _frontend/z-script-frontend/package.json ./
-COPY _frontend/z-script-frontend/package-lock.json* ./
-RUN npm ci --no-audit --no-fund
-
-# 拷源码 + build
-COPY _frontend/z-script-frontend/ ./
-RUN npm run build
-
-# ---- 运行阶段：nginx 静态服务 ----
 FROM nginx:1.25-alpine
 
 # 拷 nginx 配置 + 反代模板
@@ -31,7 +18,7 @@ COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
 
 # 拷 build 产物
 # vite 的 base 是 /script/（与 admin context-path 一致），产物必须落在 html/script/ 下
-COPY --from=builder /build/dist /usr/share/nginx/html/script
+COPY _frontend/z-script-frontend/dist/ /usr/share/nginx/html/script/
 
 EXPOSE 80
 
