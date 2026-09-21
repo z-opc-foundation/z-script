@@ -13,7 +13,9 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# 脚本在 deploy/bin/ 下，仓库根要往上两级；docker build 的 -f deploy/... 与
+# JAR_FILE=z-script-admin/target/... 都以仓库根为 context。
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 PUSH=false
