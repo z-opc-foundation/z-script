@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Layout, Tabs, Typography, Button, Space, Input, message, Alert, Modal, Select, Radio } from 'antd';
-import { ScriptListView, MockEndpointListView, AppListView } from '@yuku123/z-script-frontend-component';
+import { ScriptListView, MockEndpointListView, AppListView, ScriptVersionView } from '@yuku123/z-script-frontend-component';
 
 const { Header, Content } = Layout;
 
@@ -27,6 +27,10 @@ export default function App() {
   const [scripts, setScripts] = useState([]);
   const [endpoints, setEndpoints] = useState([]);
   const [apps, setApps] = useState([]);
+  // 「版本/灰度」面板的独立状态：选中的脚本 + 版本列表
+  const [selectedScriptId, setSelectedScriptId] = useState(null);
+  const [versions, setVersions] = useState([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   // 「配置脚本」弹窗状态：null=关闭；编辑的是应用的 scope + allowed_scripts
@@ -171,6 +175,68 @@ export default function App() {
     }
   };
 
+  // 版本/灰度面板：拉到选中脚本的版本列表。script/version/list/{scriptId} 是 GET，
+  // scriptId 取自 /api/script/list 响应里的 id 字段（DO 上是 Long 主键）。
+  const loadVersions = async (scriptId) => {
+    if (!scriptId) {
+      setVersions([]);
+      return;
+    }
+    setVersionsLoading(true);
+    try {
+      const res = await request(`script/version/list/${encodeURIComponent(scriptId)}`);
+      const body = await res.json().catch(() => ({}));
+      setVersions(Array.isArray(body.data) ? body.data : []);
+    } catch (e) {
+      setVersions([]);
+      message.error(`版本列表加载失败: ${e.message || e}`);
+    } finally {
+      setVersionsLoading(false);
+    }
+  };
+
+  // 发版：全部字段在 Controller 侧是 @RequestParam，所以走 query string + POST，
+  // 与现有 script/publish / script/run 同一套路。
+  const publishVersion = async (payload) => {
+    const qs = new URLSearchParams();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) qs.append(k, v);
+    });
+    const res = await request(`script/version/publish?${qs.toString()}`, { method: 'POST' });
+    const body = await res.json().catch(() => ({}));
+    const ok = res.ok && body.success !== false;
+    message[ok ? 'success' : 'error'](`发版${ok ? '成功' : `失败: ${body.message || res.status}`}`);
+    if (ok && selectedScriptId) await loadVersions(selectedScriptId);
+  };
+
+  // 灰度权重：canaryWeight 0~100，>0 = 启用 GRAY，=0 = 降级为 DEPRECATED（见 service）
+  const setCanaryVersion = async (versionId, weight) => {
+    const res = await request(
+      `script/version/canary/${encodeURIComponent(versionId)}?canaryWeight=${encodeURIComponent(weight)}`,
+      { method: 'POST' }
+    );
+    const body = await res.json().catch(() => ({}));
+    const ok = res.ok && body.success !== false;
+    message[ok ? 'success' : 'error'](`灰度 ${weight}%${ok ? ' 已设置' : `失败: ${body.message || res.status}`}`);
+    if (ok && selectedScriptId) await loadVersions(selectedScriptId);
+  };
+
+  const promoteVersion = async (versionId) => {
+    const res = await request(`script/version/promote/${encodeURIComponent(versionId)}`, { method: 'POST' });
+    const body = await res.json().catch(() => ({}));
+    const ok = res.ok && body.success !== false;
+    message[ok ? 'success' : 'error'](`晋升${ok ? '成功' : `失败: ${body.message || res.status}`}`);
+    if (ok && selectedScriptId) await loadVersions(selectedScriptId);
+  };
+
+  const offlineVersion = async (versionId) => {
+    const res = await request(`script/version/offline/${encodeURIComponent(versionId)}`, { method: 'POST' });
+    const body = await res.json().catch(() => ({}));
+    const ok = res.ok && body.success !== false;
+    message[ok ? 'success' : 'error'](`下线${ok ? '成功' : `失败: ${body.message || res.status}`}`);
+    if (ok && selectedScriptId) await loadVersions(selectedScriptId);
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -241,6 +307,26 @@ export default function App() {
               key: 'mocks',
               label: `Mock 端点 (${endpoints.length})`,
               children: <MockEndpointListView endpoints={endpoints} loading={loading} />,
+            },
+            {
+              key: 'versions',
+              label: `版本/灰度 (${versions.length})`,
+              children: (
+                <ScriptVersionView
+                  scripts={scripts}
+                  selectedScriptId={selectedScriptId}
+                  versions={versions}
+                  loading={versionsLoading}
+                  onSelectScript={(id) => {
+                    setSelectedScriptId(id);
+                    loadVersions(id);
+                  }}
+                  onPublish={publishVersion}
+                  onSetCanary={setCanaryVersion}
+                  onPromote={promoteVersion}
+                  onOffline={offlineVersion}
+                />
+              ),
             },
           ]}
         />
