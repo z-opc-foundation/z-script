@@ -33,16 +33,6 @@ export default function App() {
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  // 「录制/回放」面板独立状态（不依赖后端接口）
-  const [requestRecorder] = useState(() => (path, init) => {
-    const res = fetch(api(path), { ...init, headers: { ...headers(), ...init.headers } });
-    return res;
-  });
-  // 「场景/状态机」面板独立状态
-  const [requestScenario] = useState(() => (path, init) => {
-    const res = fetch(api(path), { ...init, headers: { ...headers(), ...init.headers } });
-    return res;
-  });
   // 「配置脚本」弹窗状态：null=关闭；编辑的是应用的 scope + allowed_scripts
   const [editApp, setEditApp] = useState(null);
   const [editScope, setEditScope] = useState('SPECIFIC');
@@ -341,12 +331,12 @@ export default function App() {
             {
               key: 'recordings',
               label: '录制/回放',
-              children: <RecordingView request={requestRecorder} />,
+              children: <RecordingView request={request} />,
             },
             {
               key: 'scenarios',
               label: '场景/状态机',
-              children: <ScenarioView request={requestScenario} />,
+              children: <ScenarioView request={request} />,
             },
           ]}
         />

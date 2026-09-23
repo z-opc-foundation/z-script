@@ -535,6 +535,13 @@ SELECT 'hello_world',
 FROM DUAL
 WHERE NOT EXISTS(SELECT 1 FROM `z_script` WHERE `script_code` = 'hello_world');
 
+-- 存量修复：httpPath 已统一收敛到 /api/script-run/{code}（create/publish 都写这个值），
+-- 但早期版本 publish 写的是 /run/{code}，且 demo 行的 WHERE NOT EXISTS 不会覆盖已存在的旧值。
+-- 幂等：只重写仍精确等于旧格式的行。
+UPDATE `z_script`
+SET `http_path` = CONCAT('/api/script-run/', `script_code`)
+WHERE `http_path` = CONCAT('/run/', `script_code`);
+
 -- 默认 Mock 环境: MockEngine.resolveEnv 需要 env_code='default' 或 is_default=1
 INSERT INTO `z_mock_environment`
 (`env_code`, `env_name`, `env_type`, `base_url`, `mock_priority`, `description`, `is_default`, `tenant_code`)

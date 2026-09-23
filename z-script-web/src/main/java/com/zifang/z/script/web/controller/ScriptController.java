@@ -224,7 +224,8 @@ public class ScriptController {
         script.setExposeAs(exposeAs);
         script.setStatus(1);
         if ("HTTP".equals(exposeAs) || "BOTH".equals(exposeAs)) {
-            script.setHttpPath("/run/" + scriptCode);
+            // 与 create 一致，统一收敛到 /api/script-run/{code}（ScriptHttpDispatchController 是唯一分发入口）
+            script.setHttpPath("/api/script-run/" + scriptCode);
         }
         if ("MCP".equals(exposeAs) || "BOTH".equals(exposeAs)) {
             script.setMcpToolName("script_" + scriptCode);
