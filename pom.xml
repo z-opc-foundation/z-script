@@ -79,7 +79,7 @@
         <!-- 第三方版本全部由 z-boot-dependencies BOM 统一管理, 此处不再声明。
              z-util-* 未被 BOM 纳入, 需在此显式锁版本。 -->
         <z-boot.version>1.0.17</z-boot.version>
-        <util.version>1.0.10</util.version>
+        <util.version>1.0.13</util.version>
 
         <!-- 测试框架（显式对齐，理由见 dependencyManagement 内注释） -->
         <junit.version>5.11.4</junit.version>
