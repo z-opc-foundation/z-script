@@ -87,6 +87,7 @@
 
         <!-- Maven 插件版本（收口到根 pom） -->
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-deploy-plugin.version>3.1.4</maven-deploy-plugin.version>
         <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
@@ -262,6 +263,12 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot-plugin.version}</version>
                 </plugin>
+                <!-- 不钉版本时 Maven 会解析"最新可用"，构建随时间漂移 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -401,6 +408,10 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
+                            <!-- 本插件不认 maven.deploy.skip：实测 z-script-admin 1.0.0 已因此漏上 Central -->
+                            <excludeArtifacts>
+                                <excludeArtifact>z-script-admin</excludeArtifact>
+                            </excludeArtifacts>
                             <tokenAuth>true</tokenAuth>
                             <autoPublish>true</autoPublish>
                             <waitUntil>uploaded</waitUntil>
