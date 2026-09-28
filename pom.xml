@@ -4,11 +4,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- z-script 自包含 parent — 不依赖 monorepo (z-opc) 内部 parent,
-         改造为 io.github.yuku123 namespace (Maven Central 命名空间),
-         使用 ${revision} (CI-friendly versions) + flatten-maven-plugin (flattenMode=oss) 发版。
-         规范来源: lead/005_技术架构/005_前端工程与中间件部署架构规范.md §1/§2
-                   lead/005_技术架构/006_整体架构与新仓接入.md §3/§5.1 -->
+    <!-- 2026-09-29 起消费入口统一是 z-boot-parent：一行 parent 白拿第三方地板 1.0.19 +
+         兄弟仓权威 z-boot-fleet:1.0.0 + Java 8 的 pluginManagement，本仓不再自己摊版本表
+         （迁移前 20 格）。relativePath 留空：parent 在 repo1，不在磁盘上。
+         对外形状不变：发 flatten oss 的自包含 pom（repo1 回读 1.0.0 五份 <parent> 计数 0、无
+         com.zifang、无悬空 ${...}，oss 还会剥掉整个 <dependencyManagement> ⇒ 本仓直接条目只在
+         构建期生效），所以 flatten 必须常开，见 build 段。 -->
+    <parent>
+        <groupId>io.github.yuku123</groupId>
+        <artifactId>z-boot-parent</artifactId>
+        <version>1.0.19</version>
+        <relativePath/>
+    </parent>
+
     <groupId>io.github.yuku123</groupId>
     <artifactId>z-script</artifactId>
     <version>${revision}</version>
@@ -70,36 +78,31 @@
         <!-- 项目自身版本（CI-friendly versions 根，发版改这一处即可） -->
         <revision>1.0.0</revision>
 
-        <java.version>8</java.version>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <compile.version>8</compile.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <!-- 第三方版本全部由 z-boot-dependencies BOM 统一管理, 此处不再声明。
-             z-util-* 未被 BOM 纳入, 需在此显式锁版本。 -->
-        <z-boot.version>1.0.17</z-boot.version>
-        <util.version>1.0.13</util.version>
-
-        <!-- 测试框架（显式对齐，理由见 dependencyManagement 内注释） -->
+        <!-- 2026-09-29 迁移删掉的键，逐条按**坐标**对过（preflight 第 2/5 节；迁后复跑悬空 0 格）：
+             java.version / maven.compiler.{source,target} / project.build.sourceEncoding /
+             compile.version → 父链供 8 / 8 / UTF-8，面值没变；util.version=1.0.13 → fleet 按
+             同样那 8 个 z-util 坐标供 1.0.13；z-boot.version=1.0.17 与 spring-boot-plugin 2.7.12
+             → 跟着 parent 抬 1.0.19 / 2.7.18（理由见 DM 与 build）；compiler/resources/flatten
+             三格父链同值 3.11.0 / 3.3.1 / 1.7.3，引用点由父链解析。 -->
+        <!-- 与父链**不同值**、刻意留着的两格：junit/platform 只能按坐标写直接 <dependency> 条目
+             （import 进来的 BOM 顶不过继承来的直接 DM），surefire 靠本仓 <build><plugins> 里那条
+             带显式版本的直接声明顶过继承来的 pluginManagement。逐条理由见下面 DM 与 build 的注释。 -->
         <junit.version>5.11.4</junit.version>
         <junit-platform.version>1.11.4</junit-platform.version>
-
-        <!-- Maven 插件版本（收口到根 pom） -->
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-        <maven-deploy-plugin.version>3.1.4</maven-deploy-plugin.version>
         <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+
+        <!-- 父链的 pluginManagement 只管 compiler/surefire/failsafe/jar/resources/spring-boot
+             六件；下面这些插件坐标父链一条都不供，删键当场悬空（source 那一格见 build 里的注释）。 -->
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+        <maven-deploy-plugin.version>3.1.4</maven-deploy-plugin.version>
         <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
         <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
         <central-publishing-plugin.version>0.7.0</central-publishing-plugin.version>
-        <flatten-maven-plugin.version>1.7.3</flatten-maven-plugin.version>
         <versions-maven-plugin.version>2.17.1</versions-maven-plugin.version>
-        <spring-boot-plugin.version>2.7.12</spring-boot-plugin.version>
         <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
 
-        <!-- admin 前端构建：无 node 环境的机器（只发库 / Central 校验）用 -Dfrontend.skip=true 跳过 -->
+        <!-- admin 前端构建：无 node 环境的机器（只发库 / Central 校验）用 -Dfrontend.skip=true 跳过。
+             node/npm 是下载 URL 的坐标段、不是 Maven 坐标，地板管不到。 -->
         <frontend.skip>false</frontend.skip>
         <node.version>v18.17.0</node.version>
         <npm.version>9.6.7</npm.version>
@@ -107,10 +110,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- JUnit 5 显式对齐（先于 BOM import 声明：本 POM 的直接条目优先级高于导入的 BOM）。
-                 spring-boot-dependencies 2.7.12 锁的是 jupiter 5.8.2 / platform 1.8.2，
-                 而 surefire 3.5.4 需要 platform 1.11.x；混用会在 forked JVM 抛
-                 NoSuchMethodError: CollectionUtils.forEachInReverseOrder。 -->
+            <!-- JUnit 5.11.4 / platform 1.11.4：与父链**不同值**、刻意留着（地板 1.0.19 的 junit-bom
+                 是 5.9.3）。必须写成按坐标的**直接**条目：import 进来的 BOM 顶不过从 parent 继承来的
+                 直接 DM，只留 import 就等于静默换测试栈。surefire 3.5.4 要 platform 1.11.x，混旧
+                 platform 在 forked JVM 抛 NoSuchMethodError: CollectionUtils.forEachInReverseOrder。
+                 只钉 tree 里真实出现的这 5 个坐标（jupiter-params / junit-jupiter 聚合件实测不在）。 -->
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
@@ -142,71 +146,23 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- z-boot 第三方版本权威 BOM (Central namespace)
-                 已内含 spring-boot-dependencies / jackson-bom / groovy / druid / mybatis 等版本管理 -->
+            <!-- 迁移删掉的 DM 条目（preflight 第 2/4/5 节逐条对过）：
+                 ① z-boot-dependencies:1.0.17 的 import —— z-boot-parent 继承的就是这一坐标（1.0.19），
+                    留旧号的 import 顶不过父链的直接条目、只造成 dm 打架 ⇒ 第三方权威整体交给父链。
+                 ② z-boot-web-starter / z-boot-datasource-starter 1.0.17 —— parent 按同坐标直接供
+                    1.0.19；repo1 回读两版全文 pom 只差自身版本号与 spring-boot 三行，依赖集合一支
+                    不多不少 ⇒ 跟着抬。③ 8 支 z-util-* —— fleet 同供 1.0.13，同值 ⇒ 整条删。 -->
+            <!-- 自家 7 个 reactor 坐标一律钉 ${revision}（z-boot README「消费模型」步骤 4）。不是
+                 装饰：继承来的 DM 会改写**传递依赖**的版本，而现读 z-boot-fleet:1.0.0 里 z-script
+                 那一格（z-script.version=1.0.0）钉的是 repo1 上的**已发布件**，且 z-script-admin
+                 也在 fleet 里 ⇒ 抬 revision 时不补这一批，admin 的 fat jar 就会把旧号的 z-script-web
+                 / -scene-http 字节码打进新号包里。当前 revision 与 fleet 面值同为 1.0.0，所以这一批
+                 补完 tree 一行没动；实际补上的是原先漏掉的 z-script 与 z-script-admin 两条。 -->
             <dependency>
                 <groupId>io.github.yuku123</groupId>
-                <artifactId>z-boot-dependencies</artifactId>
-                <version>${z-boot.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
+                <artifactId>z-script</artifactId>
+                <version>${revision}</version>
             </dependency>
-
-            <!-- z-boot 通用 starter (web / datasource) -->
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-boot-web-starter</artifactId>
-                <version>${z-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-boot-datasource-starter</artifactId>
-                <version>${z-boot.version}</version>
-            </dependency>
-
-            <!-- z-util-* 表达式/HTTP/JSON 工具 (已上 Central, BOM 未纳入版本锁) -->
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-core</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-parser-json</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-http</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-expr-el</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-expr-groovy</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-expr-js</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-expr-lua</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-util-expr-sql</artifactId>
-                <version>${util.version}</version>
-            </dependency>
-
-            <!-- 内部模块：版本号统一从根 pom 的 ${revision} -->
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-script-core</artifactId>
@@ -230,6 +186,11 @@
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-script-scene-http</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-script-admin</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
@@ -256,30 +217,25 @@
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <version>${spring-boot-plugin.version}</version>
-                </plugin>
-                <!-- 不钉版本时 Maven 会解析"最新可用"，构建随时间漂移 -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>${maven-resources-plugin.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
+        <!-- 这里的 pluginManagement 整段删掉了（迁移前两条：spring-boot-maven-plugin
+             ${spring-boot-plugin.version}=2.7.12、maven-resources-plugin 3.3.1）：
+             parent 的 pluginManagement 按同一坐标直接供 2.7.18 / 3.3.1，resources 那一格面值
+             没变、spring-boot 那一格按上面 properties 段的理由跟着抬。z-script-admin 的
+             copy-frontend-dist 执行与 repackage 现在都从父链取版本。 -->
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <!-- 键已删，引用点留着：3.11.0 现在由父链解析（z-boot-parent/pom.xml:61，同值）。
+                     source/target 从原来自家的 compile.version=8 换成父链的 maven.compiler.source
+                     =8 ⇒ 面值不变；class-file major 52 已复验。
+                     ⚠ parent 那份 <configuration> 的 <compilerArgs>-parameters</compilerArgs> 是
+                     合并进来的、挡不住：产物 class 多一个 MethodParameters 属性，运行期参数名更好用，
+                     不在这一刀里回退。 -->
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>${compile.version}</source>
-                    <target>${compile.version}</target>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -290,6 +246,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <!-- 与父链**不同值**的一格（parent 的 pluginManagement 供 2.22.2），本仓刻意留着：
+                     上面那 5 条 junit 5.11.4 / platform 1.11.4 直接条目要 surefire 3.5.4 才跑得动，
+                     跟着父链降到 2.22.2 就是同时换测试执行器与用例计数口径。写在这里（本仓
+                     <build><plugins> 的直接声明 + 显式版本）顶得过继承来的 pluginManagement。 -->
                 <version>${maven-surefire-plugin.version}</version>
             </plugin>
             <plugin>
@@ -303,12 +263,17 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
+                <!-- 这条声明必须**常开**（不挂 central profile）：z-boot-parent 那条 flatten 是
+                     <inherited>false</inherited>（z-boot-parent/pom.xml:261），不下发给消费仓，
+                     而本仓对外形状是自包含 raw pom（repo1 回读 1.0.0 五份 <parent> 计数 0）⇒
+                     加了 <parent> 之后不自己 flatten，发出去的就是带着 z-boot-parent:1.0.19 的废 pom。
+                     版本键 1.7.3 已删，引用点由父链解析（同值）。 -->
                 <version>${flatten-maven-plugin.version}</version>
                 <configuration>
                     <updatePomFile>true</updatePomFile>
                     <!-- oss 模式: 保留 Central 要求的元数据 (url/licenses/developers/scm)
-                         + 解析 CI-friendly 属性 (${revision}); ${z-boot.version}/${util.version}
-                         由本 parent 的 dependencyManagement 收口 -->
+                         + 解析 CI-friendly 属性 (${revision}); 整个 <dependencyManagement> 会被
+                         剥掉，所以本仓那些直接条目只在构建期生效。 -->
                     <flattenMode>oss</flattenMode>
                 </configuration>
                 <executions>
@@ -355,6 +320,10 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
+                        <!-- 父链的 pluginManagement 只管 compiler/surefire/failsafe/jar/resources/
+                             spring-boot 六件，**不含** maven-source-plugin（地板那格 3.2.1 住在
+                             properties/DM 里，管不到插件版本）⇒ 这一格必须自己写，否则落到
+                             Maven 默认绑定的 source 插件版本上、随 Maven 版本漂。 -->
                         <version>${maven-source-plugin.version}</version>
                         <executions>
                             <execution>
