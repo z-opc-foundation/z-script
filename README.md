@@ -74,7 +74,7 @@
 - 已知边界（如实记录）：scriptCode 从 URI 解析，管理面端点解析不出 → `SPECIFIC` 的应用调不到 `list`/`publish`，
   控制台用的应用应保持 `ALL`；`READ_ONLY` 目前是空实现（与 `ALL` 等价）；
   HMAC 签名只对 GET / 无体请求可靠（`ApiKeyAuthInterceptor.readBody()` 直读 input stream，
-  javadoc 引用的 `ContentCachingRequestWrapperFilter` 实测**类不存在**，见 [`_doc/004_skill/audit-incubation-1.0.0.md`](_doc/004_skill/audit-incubation-1.0.0.md) WARN-004）。
+  javadoc 引用的 `ContentCachingRequestWrapperFilter` 实测**类不存在**，见 [`_doc/006_release/audit-incubation-1.0.0.md`](_doc/006_release/audit-incubation-1.0.0.md) WARN-004）。
 - 整体关掉鉴权只留了一个开关，且是 **JVM system property**：`-Dz.script.api-key.enabled=false`（仅本机排障，生产禁用）。
 
 ---
@@ -258,7 +258,7 @@ mock 端点响应注入 / JSON round-trip）与 `VariableReplacerTest`。
 已知口径：本仓刻意把 JUnit 钉在 5.11.4 / platform 1.11.4 并要求 surefire 3.5.4（写成 import BOM 顶不过
 父链继承来的直接 DM），跟着父链降回 2.22.2 会同时换掉执行器与用例计数口径。`z-script-core` / `z-script-web`
 目前没有测试类 —— 鉴权链与 Controller 的行为靠 [`_doc/002_deploy/z-script-admin.md`](_doc/002_deploy/z-script-admin.md)
-里的 curl 清单人工回归，改拦截器请照着 `_doc/004_skill/audit-incubation-1.0.0.md` 的复核命令走一遍。
+里的 curl 清单人工回归，改拦截器请照着 `_doc/006_release/audit-incubation-1.0.0.md` 的复核命令走一遍。
 
 ---
 
@@ -294,7 +294,7 @@ mvn -B deploy -Pcentral            # 在仓库根执行：flatten(oss) + source/
 CI 走 tag：推 `v1.0.x` 触发 [`publish-central.yml`](.github/workflows/publish-central.yml)，由 tag 反解 `revision`。
 
 ⚠️ 实测 [`_doc/003_script/build.sh`](_doc/003_script/build.sh) 与 [`package.sh`](_doc/003_script/package.sh) 是模板残留：
-二者 `SCRIPT_DIR` 落在 `_doc/003_script/`，却要求该目录有 `pom.xml` 与 `Dockerfile`（都没有），
+二者 `SCRIPT_DIR` 落在 [`_doc/003_script/`](_doc/003_script/)，却要求该目录有 `pom.xml` 与 `Dockerfile`（都没有），
 `build.sh` 还 `-pl z-script-server` —— 本仓没有这个模块，**原位直接跑必挂**。
 [`deploy_maven_center.sh`](_doc/003_script/deploy_maven_center.sh) 同理（`cd "$(dirname "$0")"` 后校验 pom.xml），
 要用就得先拷到仓库根；正常发布以上面根目录的 `mvn -B deploy -Pcentral` 或 CI 为准。
@@ -338,8 +338,8 @@ _Maintained by the z-opc-foundation organization._
   - [`install-settings.sh`](_doc/003_script/install-settings.sh) — 往 `~/.m2/settings.xml` 注入 `<server id="central">`，用环境变量占位不落明文
   - [`build.sh`](_doc/003_script/build.sh) · [`package.sh`](_doc/003_script/package.sh) — **模板残留，本仓不可用**（引用不存在的 `pom.xml` / `Dockerfile` / `z-script-server` 模块）
 
-- [`_doc/004_skill/`](_doc/004_skill/) — AI skill 与审计记录：
-  - [`audit-incubation-1.0.0.md`](_doc/004_skill/audit-incubation-1.0.0.md) — 1.0.0 孵化入库审计：WARN-001（`/run/**` 免鉴权）、WARN-002（SPECIFIC 恒 403）、WARN-003（K8s 探针路径）已修；WARN-004（带 body 的 HMAC 验签）已记录未修；WARN-005 为文档型；附复核命令
+- `_doc/004_skill/` — AI skill 与审计记录：
+  - [`audit-incubation-1.0.0.md`](_doc/006_release/audit-incubation-1.0.0.md) — 1.0.0 孵化入库审计：WARN-001（`/run/**` 免鉴权）、WARN-002（SPECIFIC 恒 403）、WARN-003（K8s 探针路径）已修；WARN-004（带 body 的 HMAC 验签）已记录未修；WARN-005 为文档型；附复核命令
 
 配套文档（不在 `_doc/` 下，链接同样实测有效）：
 [`_frontend/README.md`](_frontend/README.md) — 两层 npm 工程与 vite `base` 必须等于 `/script/` 的约定；
