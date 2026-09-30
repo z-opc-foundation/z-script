@@ -10,7 +10,8 @@
         - Mock 内核（MockEngine / MockTemplateEngine / RequestMatcherEngine / RecorderEngine /
           PlaybackEngine / ScenarioStateMachine / AssertionEngine / JsonPathExtractor / FaultInjectionEngine）
         - 动态 API（ApiSpecParser / DynamicApiExecutor，把脚本暴露成 HTTP 接口）
-        - ScriptMcpAdapter：反射调用 MCP Registry，把脚本暴露成 MCP Tool（编译期零依赖 L1）
+        - ScriptMcpAdapter：把脚本挂进 z-mcp 的 McpRegistry，暴露成 MCP Tool
+          （z-mcp-core 只作 provided：编译期拿原语，运行期由宿主应用决定引不引 z-mcp-starter）
     -->
     <parent>
         <groupId>io.github.yuku123</groupId>
@@ -38,6 +39,14 @@
         <dependency>
             <groupId>io.github.yuku123</groupId>
             <artifactId>z-script-core</artifactId>
+        </dependency>
+        <!-- ScriptMcpAdapter 用 McpRegistry 的原语挂脚本工具。provided：版本由继承来的
+             z-boot-parent → z-boot-fleet:1.0.1 下发（z-mcp.version=0.2.1），运行期是否真有
+             McpRegistry 这个 bean 由宿主应用的 z.mcp.enabled 决定。 -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-mcp-core</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

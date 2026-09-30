@@ -1,28 +1,35 @@
 package com.zifang.z.script.engine;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zifang.z.mcp.api.dto.CallToolResult;
+import com.zifang.z.mcp.core.registry.McpRegistry;
 import com.zifang.z.script.core.domain.entity.Script;
 import com.zifang.z.script.core.domain.service.ScriptService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Script → MCP 自动桥接适配器 (FEATURE008).
  *
- * <p>当脚本以 MCP 方式发布时, ScriptController 发布 {@link ScriptPublishEvent},
- * 本组件通过 {@link EventListener} 接收, 调用 McpRegistry (z-agent-mcp-center)
- * 注册该脚本为 MCP Tool。</p>
+ * <p>脚本以 MCP 方式发布时, {@code ScriptController} 发布 {@link ScriptPublishEvent},
+ * 本组件把该脚本挂进 z-mcp 的 {@link McpRegistry}，执行体直接调
+ * {@link ScriptEngine#execute(Script, Map)}。</p>
  *
  * <p>启用: {@code z.script.mcp-bridge.enabled=true} (默认 true)</p>
- * <p>MCP center 不存在时: 因 {@code @Autowired(required=false)} 静默跳过</p>
+ * <p>{@code z.mcp.enabled=false} 时容器里没有 McpRegistry: 桥接退场，脚本中心自己照常启动。</p>
+ *
+ * <p>注册表是内存版的，所以进程重启后靠 {@link ApplicationReadyEvent} 把已上线的脚本重新挂回去 ——
+ * 只等 publish 事件的话，一次重启就把这个功能清空了。</p>
  */
 @Component
 @ConditionalOnProperty(prefix = "z.script.mcp-bridge", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -30,141 +37,140 @@ public class ScriptMcpAdapter {
 
     private static final Logger log = LogManager.getLogger(ScriptMcpAdapter.class);
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /** 脚本没填 inputSchema 时的兜底: 协议要求 inputSchema 必须是对象且不得为 null. */
+    private static final String EMPTY_OBJECT_SCHEMA = "{\"type\":\"object\",\"properties\":{}}";
+
     @Autowired
     private ScriptService scriptService;
 
     @Autowired
     private ScriptEngine scriptEngine;
 
-    // (FEATURE030 v4 2026-06-26) 不从 spring 注入 mcpRegistry/mcpAnnotationToolExecutor，
-    // 改为 @PostConstruct 内从 ApplicationContext 直接 getBean。原因：
-    // - @Autowired Object 有 NoUniqueBeanDefinitionException (太多 Object bean)
-    // - @Resource(name=...) 虽然能避免，但 @EventListener 代理受影响
-    // - getBeanByName 确保 EventListenerMethodProcessor 能正确代理本 bean
     @Autowired
-    private org.springframework.context.ApplicationContext applicationContext;
-
-    private Object mcpRegistry;
-    private Object mcpAnnotationToolExecutor;
-
-    @PostConstruct
-    public void bootstrap() {
-        try {
-            mcpRegistry = applicationContext.getBean("mcpRegistry");
-            log.info("ScriptMcpAdapter bootstrap: McpRegistry present, registering MCP scripts");
-        } catch (Exception e) {
-            log.info("ScriptMcpAdapter bootstrap: McpRegistry not present, skipping");
-            return;
-        }
-        try {
-            mcpAnnotationToolExecutor = applicationContext.getBean("mcpAnnotationToolExecutor");
-        } catch (Exception e) {
-            // optional
-        }
-    }
+    private ObjectProvider<McpRegistry> mcpRegistryProvider;
 
     @EventListener
     public void onPublish(ScriptPublishEvent event) {
-        if (mcpRegistry == null) {
+        McpRegistry registry = mcpRegistryProvider.getIfAvailable();
+        if (registry == null) {
+            log.info("ScriptMcpAdapter: 容器里没有 McpRegistry (z.mcp.enabled=false?)，脚本 {} 不桥接",
+                    event.getScriptCode());
             return;
         }
-        try {
-            Script script = scriptService.getByScriptCode(event.getScriptCode());
-            if (script != null) {
-                register(script);
-            }
-        } catch (Exception e) {
-            log.error("ScriptMcpAdapter.onPublish failed", e);
+        Script script = scriptService.getByScriptCode(event.getScriptCode());
+        if (script != null) {
+            register(registry, script);
         }
     }
 
     @EventListener
     public void onUnpublish(ScriptUnpublishEvent event) {
-        if (mcpRegistry == null) {
+        McpRegistry registry = mcpRegistryProvider.getIfAvailable();
+        if (registry == null) {
             return;
         }
+        // publish/create 都按 script_{code} 写 mcpToolName，取消发布时那一格已被清空，只能按同一规则算
+        registry.unregister(toolNameOf(event.getScriptCode()));
+        log.info("ScriptMcpAdapter: 已摘除脚本 {} 的 MCP 工具", event.getScriptCode());
+    }
+
+    @EventListener
+    public void onReady(ApplicationReadyEvent event) {
+        McpRegistry registry = mcpRegistryProvider.getIfAvailable();
+        if (registry == null) {
+            return;
+        }
+        // 库件的启动期动作不该把宿主应用带倒: 脚本表还没建好时只记一条错误
         try {
-            unregister(event.getScriptCode());
+            List<Script> scripts = new ArrayList<>();
+            scripts.addAll(scriptService.listByExposeAs("MCP"));
+            scripts.addAll(scriptService.listByExposeAs("BOTH"));
+            int ok = 0;
+            for (Script script : scripts) {
+                if (register(registry, script)) ok++;
+            }
+            if (!scripts.isEmpty()) {
+                log.info("ScriptMcpAdapter: 重启后挂回 {} 个 MCP 工具 (候选 {} 个脚本)", ok, scripts.size());
+            }
         } catch (Exception e) {
-            log.error("ScriptMcpAdapter.onUnpublish failed", e);
+            log.error("ScriptMcpAdapter: 启动期重挂 MCP 工具失败", e);
         }
     }
 
-    private boolean isEligible(Script s) {
-        return s != null && ("MCP".equals(s.getExposeAs()) || "BOTH".equals(s.getExposeAs()));
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean register(Script script) {
+    /**
+     * 把脚本挂成 MCP 工具。
+     *
+     * <p>z-mcp 的注册表拒绝静默覆盖同名工具，所以重复发布走"先摘后挂"。
+     * 工具名不合法(协议要求 {@code [A-Za-z0-9_.-]} 且 ≤128)由注册表当场抛出来，
+     * 这里只负责把它记成一条看得见的错误 —— 静默失败是这个功能以前坏掉的真正原因。</p>
+     *
+     * @return 是否挂上
+     */
+    private boolean register(McpRegistry registry, Script script) {
+        String toolName = toolName(script);
+        registry.unregister(toolName);
         try {
-            String toolName = script.getMcpToolName();
-            if (toolName == null || toolName.isEmpty()) {
-                toolName = "script_" + script.getScriptCode();
-            }
-            script.setMcpToolName(toolName);
-
-            Map<String, Object> inputSchema = buildInputSchema(script);
-            Map<String, Object> outputSchema = buildOutputSchema(script);
-
-            // 反射调 McpRegistry.registerOrUpdate(ToolMeta)
-            Class<?> metaCls = Class.forName("com.zifang.z.agent.mcp.core.ToolMeta");
-            Object meta = metaCls.getDeclaredConstructor().newInstance();
-            metaCls.getMethod("setToolName", String.class).invoke(meta, toolName);
-            metaCls.getMethod("setType", String.class).invoke(meta, "SCRIPT");
-            metaCls.getMethod("setDescription", String.class).invoke(meta,
-                    script.getDescription() == null ? "Script: " + script.getScriptName() : script.getDescription());
-            metaCls.getMethod("setInputSchema", Map.class).invoke(meta, inputSchema);
-            metaCls.getMethod("setOutputSchema", Map.class).invoke(meta, outputSchema);
-
-            java.lang.reflect.Method registerOrUpdate = mcpRegistry.getClass()
-                    .getMethod("registerOrUpdate", metaCls);
-            Object ok = registerOrUpdate.invoke(mcpRegistry, meta);
-
-            // 注册执行器
-            java.lang.reflect.Method execRegister = mcpAnnotationToolExecutor.getClass()
-                    .getMethod("register", String.class, Object.class, java.lang.reflect.Method.class);
-            execRegister.invoke(mcpAnnotationToolExecutor, toolName, this,
-                    this.getClass().getMethod("invokeFromMcp", String.class, Map.class));
-
-            log.info("ScriptMcpAdapter registered MCP tool: {} (input={} params, output={} fields)",
-                    toolName, inputSchema.size(), outputSchema.size());
+            final String scriptCode = script.getScriptCode();
+            registry.tool(toolName)
+                    .title(script.getScriptName())
+                    .description(script.getDescription() == null
+                            ? "Script: " + script.getScriptName() : script.getDescription())
+                    .inputSchema(orFallback(script.getInputSchema()))
+                    .outputSchema(script.getOutputSchema())
+                    .register(arguments -> run(scriptCode, arguments));
+            log.info("ScriptMcpAdapter: 脚本 {} 已暴露为 MCP 工具 {}", scriptCode, toolName);
             return true;
-        } catch (Exception e) {
-            log.warn("ScriptMcpAdapter.register failed for {}: {}", script.getScriptCode(), e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("ScriptMcpAdapter: 脚本 " + script.getScriptCode() + " 暴露为 MCP 工具失败: "
+                    + e.getMessage(), e);
             return false;
         }
     }
 
-    public Object invokeFromMcp(String toolName, Map<String, Object> params) {
-        // 查找脚本
-        return null; // placeholder
-    }
-
-    private void unregister(String scriptCode) {
-        try {
-            String toolName = "script_" + scriptCode;
-            java.lang.reflect.Method m = mcpRegistry.getClass().getMethod("unregisterTool", String.class);
-            m.invoke(mcpRegistry, toolName);
-            log.info("ScriptMcpAdapter unregistered tool for script={}", scriptCode);
-        } catch (Throwable t) {
-            log.warn("unregister failed for {}: {}", scriptCode, t.getMessage());
+    /** 每次调用重新取脚本，改完源码不必重新发布。 */
+    private CallToolResult run(String scriptCode, Map<String, Object> arguments) {
+        Script script = scriptService.getByScriptCode(scriptCode);
+        if (script == null) {
+            return CallToolResult.executionError("脚本不存在: " + scriptCode);
         }
+        ExecutionResult result = scriptEngine.execute(script, arguments);
+        if (!result.isSuccess()) {
+            return CallToolResult.executionError(String.valueOf(result.getErrorMessage()));
+        }
+        String text = toJson(result.getData());
+        String declared = script.getOutputSchema();
+        // 广告了 outputSchema 就必须交回 structuredContent，否则协议层判"输出违反自己的 schema";
+        // 没广告的脚本只交文本块, 免得客户端拿到一份它没要过的结构化结果。
+        return declared == null || declared.trim().isEmpty()
+                ? CallToolResult.text(text) : CallToolResult.structured(result.getData(), text);
     }
 
-    private Map<String, Object> buildInputSchema(Script script) {
-        // 简化版
-        Map<String, Object> schema = new LinkedHashMap<>();
-        schema.put("type", "object");
-        Map<String, Object> props = new LinkedHashMap<>();
-        props.put("input", Collections.singletonMap("type", "string"));
-        schema.put("properties", props);
-        return schema;
+    /** 工具名: publish/create 写进 mcpToolName 的就是 script_{code}，历史数据缺这一格时按同一规则补。 */
+    private static String toolName(Script script) {
+        String name = script.getMcpToolName();
+        return name == null || name.trim().isEmpty()
+                ? toolNameOf(script.getScriptCode()) : name.trim();
     }
 
-    private Map<String, Object> buildOutputSchema(Script script) {
-        Map<String, Object> schema = new LinkedHashMap<>();
-        schema.put("type", "object");
-        return schema;
+    private static String toolNameOf(String scriptCode) {
+        return "script_" + scriptCode;
+    }
+
+    private static String orFallback(String schemaJson) {
+        return schemaJson == null || schemaJson.trim().isEmpty() ? EMPTY_OBJECT_SCHEMA : schemaJson;
+    }
+
+    private static String toJson(Object value) {
+        if (value instanceof String) {
+            return (String) value;
+        }
+        try {
+            return MAPPER.writeValueAsString(value);
+        } catch (Exception e) {
+            return String.valueOf(value);
+        }
     }
 
     // ---- 内部事件类 ----
