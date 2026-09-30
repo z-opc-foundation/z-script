@@ -1,73 +1,150 @@
+# 发布到 Maven Central: 打 v<x.y.z> 标签即发。骨架照 z-mcp 那份（组织里走在前面的参考），
+# 但本版在它基础上补了一处它自己缺的东西 —— 见下面 "凭证为什么挂在作业级 env" 那段。
+#
+# 与 z-boot 的差别：z-boot 1.0.19 起按文件夹独立成工程（六个版本），标签说不出六个版本，所以那边
+# 改成调脚本按文件夹发；本仓根 pom 用 ${revision}（当前 1.0.1），版本号确实来自标签，-Drevision 保留。
+#
+# "哪几件该上中央"这件事在本仓是由 pom 说的，不是由这份 yml 说的：
+# central profile 的 central-publishing-maven-plugin 写了 excludeArtifacts=z-script-admin，
+# 所以 -Drevision 一条命令铺满 <modules> 就行，这里不再叠一层 -pl 白名单（两处各记一份 = 迟早对不上）。
+# 别改用 maven.deploy.skip 去兜 admin：它对 central-publishing 的上传不生效（兄弟仓实测），
+# 那是"属性写了却没真跳过、还照样报发布成功"的最难查的一类。
+# repo1 实测：z-script-admin 只有 1.0.0（排除之前的历史件），1.0.1 起确实没有它 —— 排除是生效的。
+#
+# 为什么这一步跑测试：本仓**没有** ci.yml，这份 publish 是唯一的 CI。别在这条 mvn 上加 -DskipTests，
+# 那等于把测试从 CI 里整体摘掉。（deploy 步骤 skipTests 是因为测试已在上一步跑过，不是不跑。）
+#
+# 抬标签之前先在本地过一遍静态点伤尺（它住在 z-boot 里，是这套 foundation 的发布口径工具，不在各仓再存一份）：
+#   python3 ../z-boot/_doc/003_script/central_pom_scan.py --path .
+# 它管的是 Central 会**整批判 FAILED** 的那几类 pom 缺陷（叶子 pom 缺 <name>、dependencyManagement
+# 项无版本、插件无版本兜底）。这类缺陷在 mvn 输出里一律是 BUILD SUCCESS，只有回读中央拒绝原因才看得见。
+#
+# 为什么不再有 -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}"：
+#   1) 这个值会出现在 mvn 拉起的 java 进程 argv 上，同一 runner 里任何一步 ps 都读得到 —— Actions 官方点名要避免；
+#   2) ${{ }} 是模板替换，发生在 shell 之前，口令里带个引号就能改写这条命令行。
+# 现在口令由 setup-java 的 gpg-passphrase-env-var 走 maven-gpg-plugin 的 gpg.passphraseEnvName
+# （需 >= 3.2.0；本仓 central profile 钉 3.2.7），明文只存在于进程环境里。
+# GPG_PRIVATE_KEY 需 ASCII-armored: `gpg --armor --export-secret-keys <KEYID>`.
+
 name: publish-maven-central
 
 on:
   push:
     tags:
-      - 'v*'   # 任何 v* 标签触发: v1.0.1, v1.0.2, v2.0.0 ...
-  workflow_dispatch:    # 手动触发(可选)
+      - 'v*'   # 任何 v<x.y.z> 标签触发: v1.0.2, v1.1.0 ...
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '要发布的版本号, 例如 1.0.2; 留空则从触发的标签解析'
+        required: false
+        default: ''
 
 permissions:
   contents: read
-  id-token: write       # OIDC token for Sonatype Central publishing
+  id-token: write       # 保留原样（tokenAuth=true 路径其实不签 OIDC，见 z-boot 侧同口径实测）
 
 env:
   JAVA_VERSION: '8'
+  # 本仓在 Central 上的坐标前缀 + 用来探"这个版本是否已被占"的那件
+  GROUP_PATH: io/github/yuku123
+  ARTIFACT: z-script-core
 
 jobs:
   publish:
-    name: Build + Sign + Deploy to Maven Central
+    name: Build + Test + Sign + Deploy to Maven Central
     runs-on: ubuntu-latest
+    # 测试 + 七个模块（含不发布的 admin）逐个签名打包 + Central 侧 waitUntil=uploaded 最长 30 分钟；
+    # 不给上限就烧满 Actions 默认的 6 小时。
+    timeout-minutes: 45
+    env:
+    # setup-java 写进 settings.xml 的是 ${env.CENTRAL_USERNAME} / ${env.CENTRAL_TOKEN} 占位
+    # （它刻意不把明文落盘），gpg-passphrase-env-var 同理只写变量名。所以这三个变量必须在**跑 mvn
+    # 的那一步**就在环境里 —— 只挂在 setup-java 步骤的 env: 上活不过那一步，deploy 时读不到，
+    # 症状是"仓库 secrets 明明配了却 401 / 签名卡在 pinentry"。
+    # 挂作业级而不是 workflow 顶层：凭证只给这个 job，将来加一个不需要凭证的 job 就不会捎带上。
+      CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+      CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
-
-      - name: Import GPG private key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+        uses: actions/checkout@v7
 
       - name: Resolve revision from tag
         id: rev
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          VER="${TAG#v}"
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            VER="$INPUT_VERSION"
+            SRC="workflow_dispatch input"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+            case "$TAG" in
+              v[0-9]*) ;;
+              *) echo "::error::ref '$TAG' 不是 v<x.y.z> 形式的标签; 要手工触发请在 workflow_dispatch 里显式给 version"; exit 1 ;;
+            esac
+            VER="${TAG#v}"
+            SRC="tag $TAG"
+          fi
+          # 只放行 x.y.z 或 x.y.z-后缀。别用通配式 ([0-9]*.[0-9]*.[0-9]*)：它的 * 会吞掉分号和空格，
+          # "1.0.0;rm -rf /" 能蒙过它 —— 而这个值要进 URL 和 maven 命令行。
+          if [[ ! "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.][0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::从 ${SRC} 解析出的版本 '$VER' 不是 x.y.z[-后缀], 拒绝发布"; exit 1
+          fi
+          echo "Resolved revision from ${SRC}: ${VER}"
           echo "revision=${VER}" >> "$GITHUB_OUTPUT"
-          echo "Resolved revision from tag ${TAG}: ${VER}"
-
-      - name: Set Maven Central Token (User Token from https://central.sonatype.com/account)
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
-            <servers>
-              <server>
-                <id>central</id>
-                <username>${CENTRAL_USERNAME}</username>
-                <password>${CENTRAL_TOKEN}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-          echo "✅ ~/.m2/settings.xml 已生成"
         env:
-          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+
+      - name: Refuse a version whose coordinates are already taken
+        # 中央仓库的坐标是永久占位：同版本号重发要么 409 卡死、要么留下半套产物，且都撤不回来。
+        # 这里只在"确实查到已发布"时拦；查不到(404)放行，网络本身出问题时不冤枉拦。
+        run: |
+          url="https://repo1.maven.org/maven2/${GROUP_PATH}/${ARTIFACT}/${REVISION}/${ARTIFACT}-${REVISION}.pom"
+          code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url" || echo curl-failed)"
+          case "$code" in
+            200) echo "::error::$url 已经存在 (404 才说明这个版本没被占过). 抬版本号再发。"; exit 1 ;;
+            404|403|410) echo "OK: $code — $url 未被占用" ;;
+            *) echo "WARN: 预检没查到结论 (http=$code), 继续发布" ;;
+          esac
+        env:
+          REVISION: ${{ steps.rev.outputs.revision }}
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }} + Central credentials
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+          # 对应 pom 里 central-publishing-maven-plugin 的 <publishingServerId>central</publishingServerId>
+          server-id: central
+          server-username-env-var: CENTRAL_USERNAME
+          server-password-env-var: CENTRAL_TOKEN
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase-env-var: GPG_PASSPHRASE
+
+      - name: Test
+        # -Drevision 必须和后面 deploy 用同一个值：测试跑的是"将要发出去的那个版本"的构建，
+        # 不给的话根 pom 的 ${revision} 停在属性默认值上，两边比的不是同一份产物。
+        run: mvn -B -ntp test -Drevision="$REVISION"
+        env:
+          REVISION: ${{ steps.rev.outputs.revision }}
 
       - name: mvn deploy -Pcentral
-        run: |
-          mvn -B deploy -Pcentral \
-              -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" \
-              -Drevision="${{ steps.rev.outputs.revision }}"
+        run: mvn -B -ntp deploy -Pcentral -DskipTests -Drevision="$REVISION"
+        env:
+          REVISION: ${{ steps.rev.outputs.revision }}
 
       - name: Verify deployment
         if: success()
         run: |
-          echo "✅ Published. Verify at: https://central.sonatype.com/artifact/io.github.yuku123/z-script"
+          echo "Published ${REVISION}. 判发布只认 repo1 回读（HEAD 不给 200，用 ranged GET）:"
+          # admin 不在这份清单里：它由 pom 的 excludeArtifacts 排除（repo1 实测 1.0.1 确实 404，
+          # 只有排除之前的历史件 1.0.0 在）。scene-http 别漏 —— 它是 z-script-scene 这个 pom 聚合器
+          # 底下真正的 jar，用到 http mock 链的消费者 import 的就是它。
+          for a in z-script z-script-core z-script-engine z-script-web z-script-scene z-script-scene-http; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -r 0-0 --max-time 30 \
+              "https://repo1.maven.org/maven2/${GROUP_PATH}/${a}/${REVISION}/${a}-${REVISION}.pom")
+            printf '  %-18s http=%s\n' "$a" "$code"
+          done
+          echo "上传成功 ≠ 收下 —— 逐件看 deploymentState: https://central.sonatype.com/publishing/deployments"
+        env:
+          REVISION: ${{ steps.rev.outputs.revision }}

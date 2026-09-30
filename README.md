@@ -24,7 +24,10 @@
 
 > 孵化初期这批库确实还没上 Central；现在的实测结论是「已发布」，且 admin 的漏发已收口。
 > 编译建议 JDK 17、运行 JDK 8（见 [`_doc/002_deploy/z-script-admin.md`](_doc/002_deploy/z-script-admin.md)）；
-> CI [`publish-central.yml`](.github/workflows/publish-central.yml) 走的是 temurin 8 + `mvn -B deploy -Pcentral -Drevision=<tag)`。
+> CI [`publish-central.yml`](.github/workflows/publish-central.yml) 走 temurin 8：先校验标签版本形状、探一次
+> repo1 占位，再 `mvn -B test -Drevision=<tag>` 跑测试（本仓没有 ci.yml，这份 publish 是唯一 CI —— 实测 36 项：
+> engine 15 + scene-http 21），最后 `mvn -B -ntp deploy -Pcentral -DskipTests -Drevision=<tag>`。
+> 签名口令不进命令行 argv（走 setup-java 写的 `gpg.passphraseEnvName`）。
 
 ---
 
@@ -291,7 +294,8 @@ mvn -B deploy -Pcentral            # 在仓库根执行：flatten(oss) + source/
 
 `central` profile 只发 `z-script` / `-core` / `-engine` / `-web` / `-scene` / `-scene-http`，
 并用 `excludeArtifacts` 显式挡住 `z-script-admin`（该插件**不认** `maven.deploy.skip`，1.0.0 就是因此漏上去的）。
-CI 走 tag：推 `v1.0.x` 触发 [`publish-central.yml`](.github/workflows/publish-central.yml)，由 tag 反解 `revision`。
+CI 走 tag：推 `v1.0.x` 触发 [`publish-central.yml`](.github/workflows/publish-central.yml)，由 tag 反解 `revision`
+（先校验 `x.y.z[-后缀]` 形状，再探 repo1 —— 已占位的版本当场拒，别等 409 才知道撤不回来）。
 
 ⚠️ 实测 [`_doc/003_script/build.sh`](_doc/003_script/build.sh) 与 [`package.sh`](_doc/003_script/package.sh) 是模板残留：
 二者 `SCRIPT_DIR` 落在 [`_doc/003_script/`](_doc/003_script/)，却要求该目录有 `pom.xml` 与 `Dockerfile`（都没有），
