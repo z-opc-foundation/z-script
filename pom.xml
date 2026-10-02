@@ -76,7 +76,7 @@
 
     <properties>
         <!-- 项目自身版本（CI-friendly versions 根，发版改这一处即可） -->
-        <revision>1.0.1</revision>
+        <revision>1.0.2</revision>
 
         <!-- 2026-09-29 迁移删掉的键，逐条按**坐标**对过（preflight 第 2/5 节；迁后复跑悬空 0 格）：
              java.version / maven.compiler.{source,target} / project.build.sourceEncoding /

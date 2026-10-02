@@ -1,11 +1,14 @@
 package com.zifang.z.script.web.config;
 
 import com.zifang.z.script.web.interceptor.ApiKeyAuthInterceptor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * z-script Web MVC 配置 (FEATURE051 / FEATURE055 · D04 已整改)
@@ -33,14 +36,30 @@ public class ZScriptWebMvcConfig implements WebMvcConfigurer {
     @Resource
     private ApiKeyAuthInterceptor apiKeyAuthInterceptor;
 
+    /**
+     * 拦截射程。独立部署（context-path /script）保持默认 {@code /api/**,/run/**} —— 仓内全部端点
+     * 默认拒绝；作为嵌入式依赖合入宿主进程（如 z-opc main-starter，无 context 隔离）时，宿主必须
+     * 用本属性把射程钉回 z-script 自己的 URL 空间，否则会把宿主自己的 /api/**（登录、业务模块）
+     * 一并扣下 X-Api-Key。宿主钉法见 z-opc application.properties 的 z.script.api-key.path-patterns。
+     */
+    @Value("${z.script.api-key.path-patterns:/api/**,/run/**}")
+    private String pathPatterns;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        List<String> patterns = new ArrayList<>();
+        for (String p : pathPatterns.split(",")) {
+            String trimmed = p.trim();
+            if (!trimmed.isEmpty()) {
+                patterns.add(trimmed);
+            }
+        }
         registry.addInterceptor(apiKeyAuthInterceptor)
-                // /api/**：仓内所有管理面 Controller，脚本的 HTTP 暴露（/api/script-run/**）
+                // 默认 /api/**：仓内所有管理面 Controller，脚本的 HTTP 暴露（/api/script-run/**）
                 // 与 Mock 分发（/api/mock/**）本身也在该前缀下，无需再点名。
                 // /run/**：ScriptRunController 的历史路由，不在 /api 前缀下，却是「已发布脚本」
                 // 的另一扇门（publish 后 httpPath 就是 /run/{code}），不点名等于留了一条免鉴权的执行旁路。
-                .addPathPatterns("/api/**", "/run/**")
+                .addPathPatterns(patterns.toArray(new String[0]))
                 .excludePathPatterns(
                         // 引导：创建 Key 时调用方还没有 Key，这是唯一必须免鉴权的端点。
                         // 精确匹配 /api/script/api-key，不含 /page、/list-enabled、/{id} 等读端点。
