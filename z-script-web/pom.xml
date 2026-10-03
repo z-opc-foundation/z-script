@@ -62,5 +62,17 @@
             <groupId>io.github.yuku123</groupId>
             <artifactId>z-util-parser-json</artifactId>
         </dependency>
+
+        <!-- host 桥接类 (ScriptRunAliasController /api/script-run/list) 编译期需要 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>
