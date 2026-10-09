@@ -45,7 +45,7 @@ deploy/
 | 项 | 值 |
 |---|---|
 | 后端端口 | `8086`（`SERVER_PORT` 可覆盖） |
-| context-path | `/script`，与 `_frontend/z-script-frontend` 的 vite `base` 严格一致 |
+| context-path | `/script`，与 `_frontend/z-script-suit` 的 vite `base` 严格一致 |
 | 控制台 | `http://<host>:8086/script/` |
 | 健康检查 | `/script/actuator/health`（只暴露 `health,info`，`show-details: never`） |
 | 业务 API 前缀 | `/script/api/**`（仓内所有 Controller 都在 `/api` 下） |

@@ -25,6 +25,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: z-script-frontend
+                name: z-script-suit
                 port:
                   number: 80

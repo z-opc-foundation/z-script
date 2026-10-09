@@ -1,6 +1,6 @@
-# z-script-frontend-component · 可复用组件层
+# z-script-component · 可复用组件层
 
-> `@yuku123/z-script-frontend-component` v0.1.0（`private: true`）。
+> `@yuku123/z-script-component` v0.1.0（`private: true`）。
 > Vite **library mode** 产出的纯展示组件包：接 props，不发请求。
 
 ## 是什么
@@ -33,7 +33,7 @@ export { default as MockEndpointListView } from './MockEndpointListView';
 ## 目录结构
 
 ```
-z-script-frontend-component/
+z-script-component/
 ├── package.json            # main/module/exports -> ./dist/index.js, files: ["dist"]
 ├── vite.config.js          # build.lib: src/index.jsx, formats ['es'], rollupOptions.external
 └── src/
@@ -45,12 +45,12 @@ z-script-frontend-component/
 ## 本地开发命令
 
 ```bash
-cd _frontend/z-script-frontend-component
+cd _frontend/z-script-component
 npm run build     # vite build -> dist/index.js
 npm run dev       # vite build --watch
 ```
 
-应用层 `z-script-frontend` 的 `npm run build` 会先调 `build:component`，
+应用层 `z-script-suit` 的 `npm run build` 会先调 `build:component`，
 所以正常全链路构建不需要手工在这里跑命令。
 
 ## 依赖与产物约定
@@ -69,13 +69,13 @@ npm run dev       # vite build --watch
 同仓（应用层走 `file:` 协议 + 显式 alias）：
 
 ```json
-"dependencies": { "@yuku123/z-script-frontend-component": "file:../z-script-frontend-component" }
+"dependencies": { "@yuku123/z-script-component": "file:../z-script-component" }
 ```
 
 跨仓（规范 §3.1 默认同样是 `file:`）：
 
 ```json
-"@yuku123/z-script-frontend-component": "file:../../z-script/_frontend/z-script-frontend-component"
+"@yuku123/z-script-component": "file:../../z-script/_frontend/z-script-component"
 ```
 
 装的时候按规范 §3.4 加 `--install-links`（npm 8+ 不加就是 copy，HMR 失效）。
@@ -85,7 +85,7 @@ npm run dev       # vite build --watch
 用法示例（数据自取，组件不关心来源）：
 
 ```jsx
-import { ScriptListView } from '@yuku123/z-script-frontend-component';
+import { ScriptListView } from '@yuku123/z-script-component';
 
 <ScriptListView scripts={rows} loading={loading} onRun={(r) => run(r.scriptCode)} />
 ```

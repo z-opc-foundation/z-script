@@ -1,7 +1,7 @@
 server:
   port: ${SERVER_PORT:8086}
   servlet:
-    # 控制台挂在 /script/ 下，与 _frontend/z-script-frontend/vite.config.js 的 base 严格一致
+    # 控制台挂在 /script/ 下，与 _frontend/z-script-suit/vite.config.js 的 base 严格一致
     context-path: /script
 
 spring:

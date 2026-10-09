@@ -109,8 +109,8 @@ scope 取签 Key 请求里的值——控制台传 `ALL`，因此引导路径不
 
 ## 7. 前端两层（`_frontend/`）
 
-- `z-script-frontend-component`：库模式，组件只吃 props、不 fetch（`ScriptListView`、`MockEndpointListView`）；
-- `z-script-frontend`：SPA 控制台，负责取数与提交，AK 存 localStorage，请求统一带 `X-Api-Key`；
+- `z-script-component`：库模式，组件只吃 props、不 fetch（`ScriptListView`、`MockEndpointListView`）；
+- `z-script-suit`：SPA 控制台，负责取数与提交，AK 存 localStorage，请求统一带 `X-Api-Key`；
 - **vite `base` 必须等于 admin 的 `server.servlet.context-path`（`/script/`）**，否则内嵌进 jar 后资源 404；
 - admin 的 `package` 阶段用 frontend-maven-plugin 装 node/npm、`npm run build`，再由
   maven-resources-plugin 把 dist 拷进 `target/classes/static/` → 一个 jar 同时给 API 和控制台。

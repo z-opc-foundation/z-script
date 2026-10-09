@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Layout, Tabs, Typography, Button, Space, Input, message, Alert, Modal, Select, Radio } from 'antd';
-import { ScriptListView, MockEndpointListView, AppListView, ScriptVersionView, RecordingView, ScenarioView } from '@yuku123/z-script-frontend-component';
+import { ScriptListView, MockEndpointListView, AppListView, ScriptVersionView, RecordingView, ScenarioView } from '@yuku123/z-script-component';
 
 const { Header, Content } = Layout;
 

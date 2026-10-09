@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      '@yuku123/z-script-frontend-component':
-        specifier: file:../z-script-frontend-component
-        version: file:../z-script-frontend-component(antd@5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@yuku123/z-script-component':
+        specifier: file:../z-script-component
+        version: file:../z-script-component(antd@5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       antd:
         specifier: ^5.12.0
         version: 5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -535,8 +535,8 @@ packages:
     peerDependencies:
       vite: ^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  '@yuku123/z-script-frontend-component@file:../z-script-frontend-component':
-    resolution: {directory: ../z-script-frontend-component, type: directory}
+  '@yuku123/z-script-component@file:../z-script-component':
+    resolution: {directory: ../z-script-component, type: directory}
     peerDependencies:
       antd: ^5.0.0
       react: ^18.2.0
@@ -1409,7 +1409,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@yuku123/z-script-frontend-component@file:../z-script-frontend-component(antd@5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@yuku123/z-script-component@file:../z-script-component(antd@5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       antd: 5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1

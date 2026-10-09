@@ -6,8 +6,8 @@
 **/target
 !z-script-admin/target/z-script-admin-1.0.0-exec.jar
 **/dist
-!_frontend/z-script-frontend/dist
+!_frontend/z-script-suit/dist
 _doc
-_frontend/z-script-frontend/node
+_frontend/z-script-suit/node
 *.log
 .DS_Store

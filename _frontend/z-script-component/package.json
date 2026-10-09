@@ -1,5 +1,5 @@
 {
-  "name": "@yuku123/z-script-frontend-component",
+  "name": "@yuku123/z-script-component",
   "version": "0.1.0",
   "private": true,
   "description": "Z-Script 可复用前端组件层（脚本列表 / Mock 端点列表，纯展示、接 props 不 fetch）",

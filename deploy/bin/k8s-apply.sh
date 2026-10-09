@@ -63,7 +63,7 @@ done
 echo ""
 echo "=== 等 rollout ==="
 kubectl -n "${NAMESPACE}" rollout status deployment/z-script-backend --timeout=300s
-kubectl -n "${NAMESPACE}" rollout status deployment/z-script-frontend --timeout=180s
+kubectl -n "${NAMESPACE}" rollout status deployment/z-script-suit --timeout=180s
 
 echo ""
 echo "✓ 部署完成。控制台：https://script.${INGRESS_DOMAIN}/script/（Ingress host 见 05-ingress.yaml）"

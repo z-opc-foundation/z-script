@@ -1,5 +1,5 @@
 # _frontend/ 容器级 .gitignore
-# 两个子 npm 项目（z-script-frontend/ 与 z-script-frontend-component/）都继承本规则。
+# 两个子 npm 项目（z-script-suit/ 与 z-script-component/）都继承本规则。
 
 # ===== npm 通用 =====
 node_modules/

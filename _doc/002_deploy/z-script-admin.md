@@ -197,7 +197,7 @@ invoke_params, invoke_status, http_status, duration_ms, error_message, invoked_a
 
 ## 控制台（自带 web）
 
-- 两层前端在 `_frontend/`：`z-script-frontend`（SPA）+ `z-script-frontend-component`（纯 props 组件库），
+- 两层前端在 `_frontend/`：`z-script-suit`（SPA）+ `z-script-component`（纯 props 组件库），
   细节见 [_frontend/README.md](../../_frontend/README.md)。
 - 构建期 `dist/` 拷进 `target/classes/static/`，运行期与 API 同源。
 - 首次进入是空列表 + `MISSING_API_KEY` —— 点「签发 AK」或粘贴已有 AK，属正常。

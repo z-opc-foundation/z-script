@@ -18,13 +18,13 @@
 ```
 _frontend/
 ├── .gitignore                             # 容器级：node_modules / dist / node
-├── z-script-frontend/                     # 应用层 SPA（private，嵌 jar）
-│   ├── package.json                       # @yuku123/z-script-frontend
+├── z-script-suit/                     # 应用层 SPA（private，嵌 jar）
+│   ├── package.json                       # @yuku123/z-script-suit
 │   ├── vite.config.js                     # base=/script/ + proxy /script → 8086
 │   ├── index.html
 │   └── src/{main.jsx, App.jsx, index.css}
-└── z-script-frontend-component/           # 组件层 library（纯展示）
-    ├── package.json                       # @yuku123/z-script-frontend-component
+└── z-script-component/           # 组件层 library（纯展示）
+    ├── package.json                       # @yuku123/z-script-component
     ├── vite.config.js                     # build.lib, ES only, external react/antd
     └── src/{index.jsx, ScriptListView.jsx, MockEndpointListView.jsx}
 ```
@@ -32,17 +32,17 @@ _frontend/
 ## 依赖关系
 
 ```
-z-script-frontend-component  --build-->  dist/index.js (ESM)
+z-script-component  --build-->  dist/index.js (ESM)
         ^
-        | "file:../z-script-frontend-component"  +  vite resolve.alias 指向其 dist/index.js
-z-script-frontend  --build-->  dist/{index.html, assets/*}
+        | "file:../z-script-component"  +  vite resolve.alias 指向其 dist/index.js
+z-script-suit  --build-->  dist/{index.html, assets/*}
         ^
         | maven-resources-plugin: copy-frontend-dist（process-resources）
 z-script-admin  -->  target/classes/static/  -->  z-script-admin-1.0.0-exec.jar
 ```
 
 应用层 `vite.config.js` 在 `file:` 之外**额外**把
-`@yuku123/z-script-frontend-component` alias 到 `../z-script-frontend-component/dist/index.js`：
+`@yuku123/z-script-component` alias 到 `../z-script-component/dist/index.js`：
 npm 对 `file:` 依赖可能落成「安装时刻的 copy」而非软链（注释里点名实测 npm 11 +
 `--install-links` 仍是 copy），copy 里没有 `dist/` 就会解析失败。alias 是这条时序问题的兜底。
 
@@ -50,10 +50,10 @@ npm 对 `file:` 依赖可能落成「安装时刻的 copy」而非软链（注�
 
 ```bash
 # 组件层（library watch）
-cd _frontend/z-script-frontend-component && npm run dev      # vite build --watch
+cd _frontend/z-script-component && npm run dev      # vite build --watch
 
 # 应用层（SPA dev server，5173，host 0.0.0.0）
-cd _frontend/z-script-frontend && npm run dev
+cd _frontend/z-script-suit && npm run dev
 ```
 
 可用脚本只有 package.json 里那几个：应用层 `dev` / `build` / `build:component` / `preview`；
@@ -65,17 +65,17 @@ cd _frontend/z-script-frontend && npm run dev
 
 ```
 build            = npm run build:component && vite build
-build:component  = cd ../z-script-frontend-component && npm install --silent && npm run build
+build:component  = cd ../z-script-component && npm install --silent && npm run build
 ```
 
-Maven 侧编排（`z-script-admin/pom.xml`，全部路径相对 `${project.basedir}/../_frontend/z-script-frontend`）：
+Maven 侧编排（`z-script-admin/pom.xml`，全部路径相对 `${project.basedir}/../_frontend/z-script-suit`）：
 
 | execution id | 插件 | phase | 作用 |
 |---|---|---|---|
 | `install-node-and-npm` | frontend-maven-plugin | `generate-resources` | 装 `${node.version}`=v18.17.0 / `${npm.version}`=9.6.7 到 `target/frontend` |
 | `npm-install` | frontend-maven-plugin（goal `npm`） | `generate-resources` | `install --no-audit --no-fund` |
 | `npm-run-build` | frontend-maven-plugin（goal `npm`） | `generate-resources` | `run build` |
-| `copy-frontend-dist` | maven-resources-plugin（goal `copy-resources`） | `process-resources` | `_frontend/z-script-frontend/dist` → `${project.build.outputDirectory}/static` |
+| `copy-frontend-dist` | maven-resources-plugin（goal `copy-resources`） | `process-resources` | `_frontend/z-script-suit/dist` → `${project.build.outputDirectory}/static` |
 | `repackage`（classifier `exec`） | spring-boot-maven-plugin | `package` | `target/z-script-admin-1.0.0-exec.jar` |
 
 ```bash

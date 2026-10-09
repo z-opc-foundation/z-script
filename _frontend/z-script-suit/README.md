@@ -1,6 +1,6 @@
-# z-script-frontend · 控制台应用层（SPA）
+# z-script-suit · 控制台应用层（SPA）
 
-> `@yuku123/z-script-frontend`，`private: true`，不发布。
+> `@yuku123/z-script-suit`，`private: true`，不发布。
 > 唯一职责：装配页面 + 管认证 + 决定数据从哪来，展示交给组件层。
 
 ## 是什么
@@ -16,13 +16,13 @@ index.html  →  src/main.jsx（ReactDOM.createRoot + ConfigProvider locale=zhCN
 `App.jsx` 从组件层拿两个视图：
 
 ```jsx
-import { ScriptListView, MockEndpointListView } from '@yuku123/z-script-frontend-component';
+import { ScriptListView, MockEndpointListView } from '@yuku123/z-script-component';
 ```
 
 ## 本地开发命令
 
 ```bash
-cd _frontend/z-script-frontend
+cd _frontend/z-script-suit
 npm run build:component   # 先出组件层 dist（alias 依赖它）
 npm run dev               # vite dev server： port 5173, host 0.0.0.0
 npm run build             # = npm run build:component && vite build
@@ -83,7 +83,7 @@ Mode 2/3 走 `deploy/Dockerfile.frontend`，dist 被拷成 nginx 的 `html/scrip
   否则 `index.html` 引用的 `/assets/*.js` 会 404（应为 `/script/assets/*.js`）。
   访问地址始终是 `http://localhost:8086/script/`，不是根路径。
 - 组件层没 build 就 `npm run dev`：vite alias 指向
-  `../z-script-frontend-component/dist/index.js`，文件不存在直接解析失败。
+  `../z-script-component/dist/index.js`，文件不存在直接解析失败。
 - 执行/发布按钮：`runScript` / `publishScript` 把 `scriptCode` 放在 JSON body 里，
   而 `ScriptController` 的 `/run`、`/publish`、`/unpublish` 用 `@RequestParam` 取参。
   若后端回 400，就是这个参数位置不一致导致的，需要改成 query 传参。

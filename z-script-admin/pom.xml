@@ -9,7 +9,7 @@
 
         - 留在 reactor（统一构建），但 maven.deploy.skip=true → 永不上传 Maven Central
           （规范 lead/005_技术架构/005_前端工程与中间件部署架构规范.md §2）
-        - 前端由 _frontend/z-script-frontend/ 经 frontend-maven-plugin 构建，
+        - 前端由 _frontend/z-script-suit/ 经 frontend-maven-plugin 构建，
           再由 maven-resources-plugin 复制到 target/classes/static/（不污染源码目录）
         - 本地启动: mvn -pl z-script-admin -am package -DskipTests
                      java -jar z-script-admin/target/z-script-admin-1.0.0-exec.jar
@@ -90,7 +90,7 @@
                 <artifactId>frontend-maven-plugin</artifactId>
                 <version>${frontend-maven-plugin.version}</version>
                 <configuration>
-                    <workingDirectory>${project.basedir}/../_frontend/z-script-frontend</workingDirectory>
+                    <workingDirectory>${project.basedir}/../_frontend/z-script-suit</workingDirectory>
                     <installDirectory>${project.build.directory}/frontend</installDirectory>
                     <skip>${frontend.skip}</skip>
                 </configuration>
@@ -133,7 +133,7 @@
                             <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>${project.basedir}/../_frontend/z-script-frontend/dist</directory>
+                                    <directory>${project.basedir}/../_frontend/z-script-suit/dist</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>

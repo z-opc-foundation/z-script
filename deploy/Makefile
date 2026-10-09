@@ -69,7 +69,7 @@ down: ## 停掉所有模式
 clean: ## 停掉 + 删本地镜像
 	make down
 	docker rmi $(OCI_REGISTRY)/z-script-admin:$(IMAGE_VERSION) 2>/dev/null || true
-	docker rmi $(OCI_REGISTRY)/z-script-frontend:$(IMAGE_VERSION) 2>/dev/null || true
+	docker rmi $(OCI_REGISTRY)/z-script-suit:$(IMAGE_VERSION) 2>/dev/null || true
 
 # 详细模式默认不显示命令本身
 .SILENT: help ps logs
