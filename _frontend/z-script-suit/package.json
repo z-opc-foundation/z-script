@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@yuku123/z-script-component": "file:../z-script-component",
+    "@yuku123/z-script-component": "^0.1.0",
     "antd": "^5.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

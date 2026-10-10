@@ -15,16 +15,7 @@ export default defineConfig({
     plugins: [react()],
     resolve: {
     dedupe: ['react', 'react-dom', 'react-router-dom', 'antd', '@ant-design/icons', 'axios'],
-        alias: {
-            '@': path.resolve(__dirname, 'src'),
-            // 组件层走 file: 协议（规范 §3.1 默认）。npm 对 file: 依赖可能落成"安装时刻的副本"
-            // 而非软链（实测 npm 11 + --install-links 仍是 copy），副本里没有 dist 就会解析失败。
-            // 因此显式 alias 到组件层产物，绕开 copy/symlink 时序问题，同时保留 package.json 的 file: 声明。
-            '@yuku123/z-script-component': path.resolve(
-                __dirname,
-                '../z-script-component/dist/index.js'
-            ),
-        },
+        alias: { '@': path.resolve(__dirname, 'src'), ...(process.env.LOCAL_SIBLINGS === '1' ? { '@yuku123/z-script-component': '../z-script-component/src' } : {}) },
     },
     server: {
         port: 5173,
