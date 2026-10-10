@@ -8,7 +8,7 @@ export const menuItems = [
     { key: '/z-script/console', label: '脚本控制台', icon: <CodeOutlined /> },
 ]
 
-export const routeTable = [
+export const routes = [
     { path: '/z-script/home', Component: HomePage },
     { path: '/z-script/console', Component: ConsolePage },
 ]
