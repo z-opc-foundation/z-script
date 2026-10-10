@@ -14,6 +14,7 @@ export default defineConfig({
     base: '/script/',
     plugins: [react()],
     resolve: {
+    dedupe: ['react', 'react-dom', 'react-router-dom', 'antd', '@ant-design/icons', 'axios'],
         alias: {
             '@': path.resolve(__dirname, 'src'),
             // 组件层走 file: 协议（规范 §3.1 默认）。npm 对 file: 依赖可能落成"安装时刻的副本"
