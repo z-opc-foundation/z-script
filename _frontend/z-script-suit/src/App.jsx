@@ -5,6 +5,11 @@ import { menuItems, routes } from './pages-manifest'
 import LoginPage from './LoginPage'
 import { Result, Button } from 'antd'
 
+import { at, BASE } from './routes-base'
+
+// vite base（/script/，与 Spring context-path 一致）作为 router basename
+const ROUTER_BASENAME = BASE || undefined
+
 class ErrorBoundary extends Component {
     constructor(props) { super(props); this.state = { err: null } }
     static getDerivedStateFromError(err) { return { err } }
@@ -21,7 +26,7 @@ function NotFound() {
             status="404"
             title="页面不存在"
             subTitle="路由表里没有这条路径。"
-            extra={<Button type="primary" onClick={() => { window.location.href = '/z-script/home' }}>去首页</Button>}
+            extra={<Button type="primary" onClick={() => { window.location.href = at('/z-script/home') }}>去首页</Button>}
         />
     )
 }
@@ -36,7 +41,7 @@ function ProtectedShell() {
 
     useEffect(() => {
         if (!localStorage.getItem('token')) {
-            window.location.replace('/z-script/login')
+            window.location.replace(at('/z-script/login'))
             return
         }
         const raw = localStorage.getItem('userInfo')
@@ -61,7 +66,7 @@ function ProtectedShell() {
 export default function App() {
     return (
         <ErrorBoundary>
-            <BrowserRouter>
+            <BrowserRouter basename={ROUTER_BASENAME}>
                 <Routes>
                     <Route path="/z-script/login" element={<LoginRoute />} />
                     <Route element={<ProtectedShell />}>

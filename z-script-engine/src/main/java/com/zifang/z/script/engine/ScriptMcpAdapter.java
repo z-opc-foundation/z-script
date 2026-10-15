@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -26,12 +27,17 @@ import java.util.Map;
  * {@link ScriptEngine#execute(Script, Map)}。</p>
  *
  * <p>启用: {@code z.script.mcp-bridge.enabled=true} (默认 true)</p>
+ * <p>还要求 classpath 上真有 z-mcp（{@code z-mcp-core} 是 provided，由宿主决定）：本类的方法签名里
+ * 出现 {@code CallToolResult}/{@code McpRegistry}，缺类时 Spring 在 <b>类内省阶段</b>就抛
+ * NoClassDefFoundError —— 那发生在任何 {@code ObjectProvider} 兜底之前，条件注解救不了。
+ * 所以 {@code @ConditionalOnClass} 必须与开关条件并存，缺 z-mcp 时整个桥接组件不装配。</p>
  * <p>{@code z.mcp.enabled=false} 时容器里没有 McpRegistry: 桥接退场，脚本中心自己照常启动。</p>
  *
  * <p>注册表是内存版的，所以进程重启后靠 {@link ApplicationReadyEvent} 把已上线的脚本重新挂回去 ——
  * 只等 publish 事件的话，一次重启就把这个功能清空了。</p>
  */
 @Component
+@ConditionalOnClass(McpRegistry.class)
 @ConditionalOnProperty(prefix = "z.script.mcp-bridge", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class ScriptMcpAdapter {
 

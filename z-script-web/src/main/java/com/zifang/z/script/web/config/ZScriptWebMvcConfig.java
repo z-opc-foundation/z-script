@@ -3,10 +3,14 @@ package com.zifang.z.script.web.config;
 import com.zifang.z.script.web.interceptor.ApiKeyAuthInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +48,37 @@ public class ZScriptWebMvcConfig implements WebMvcConfigurer {
      */
     @Value("${z.script.api-key.path-patterns:/api/**,/run/**}")
     private String pathPatterns;
+
+    /**
+     * SPA history fallback: 独立部署 context-path 是 /script, 前端 BrowserRouter 刷新
+     * /script/list 这类子路由时 Spring 只返回 JSON 404, 浏览器拿不到 index.html 就白屏。
+     * vite dev/preview 自带 fallback, 本地测不出来。api/ 与 assets/ 前缀保持原样不回落。
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/**")
+                .addResourceLocations("classpath:/static/")
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver() {
+                    @Override
+                    protected Resource getResource(String resourcePath, Resource location) throws IOException {
+                        Resource requested = location.createRelative(resourcePath);
+                        if (requested.exists() && requested.isReadable()) {
+                            return requested;
+                        }
+                        if (resourcePath.startsWith("api/") || resourcePath.startsWith("assets/")) {
+                            return null;
+                        }
+                        // 任何带扩展名的都不是前端路由：vite base 配错时 index.html 会去请求
+                        // /meta/assets/x.js，回 index.html 会得到一个 200 text/html 的假成功，
+                        // 浏览器报的是 "Failed to fetch dynamically imported module"，看不出是 base 错了。
+                        if (resourcePath.lastIndexOf('.') > resourcePath.lastIndexOf('/')) {
+                            return null;
+                        }
+                        return location.createRelative("index.html");
+                    }
+                });
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
