@@ -110,6 +110,28 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- z-util 抬到 1.2.0（去 Jackson 那版）：ApiKeyAuthInterceptor
+                 改用自研 JsonUtil（com.zifang.util.json.*），JsonMapperFactory 已从 z-util 删除。
+                 继承来的 z-boot 车队 BOM 仍把 z-util 钉在 1.0.22，那版里 JsonMapperFactory
+                 还在、JsonCursor 也没有 ⇒ 不显式钉 1.2.0 就编译不过。
+                 ⚠ dsl-kernel 必须同笔钉：parser-json 1.2.0 的 pom 依赖 dsl-kernel 1.2.0，
+                 而 DM 对**传递依赖**同样生效，只钉 parser-json 会被车队 BOM 压回旧版，
+                 造成运行期版本裂开。 -->
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-core</artifactId>
+                <version>1.2.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-parser-json</artifactId>
+                <version>1.2.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-dsl-kernel</artifactId>
+                <version>1.2.1</version>
+            </dependency>
             <!-- JUnit 5.11.4 / platform 1.11.4：与父链**不同值**、刻意留着（地板 1.0.19 的 junit-bom
                  是 5.9.3）。必须写成按坐标的**直接**条目：import 进来的 BOM 顶不过从 parent 继承来的
                  直接 DM，只留 import 就等于静默换测试栈。surefire 3.5.4 要 platform 1.11.x，混旧

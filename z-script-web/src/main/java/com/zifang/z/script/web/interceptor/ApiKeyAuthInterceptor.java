@@ -1,7 +1,6 @@
 package com.zifang.z.script.web.interceptor;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zifang.util.core.json.JsonMapperFactory;
+import com.zifang.util.json.JsonUtil;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
 import com.zifang.z.script.core.domain.entity.AppDO;
 import com.zifang.z.script.core.domain.entity.InvokeLogDO;
@@ -44,7 +43,6 @@ public class ApiKeyAuthInterceptor implements HandlerInterceptor {
     public static final boolean ENABLED =
             !"false".equalsIgnoreCase(System.getProperty("z.script.api-key.enabled", "true"));
     private static final Logger log = LogManager.getLogger(ApiKeyAuthInterceptor.class);
-    private final ObjectMapper mapper = JsonMapperFactory.getDefault();
     @Autowired
     private ApiKeyService apiKeyService;
     @Autowired
@@ -314,7 +312,7 @@ public class ApiKeyAuthInterceptor implements HandlerInterceptor {
             body.put("retryAfter", retryAfter);
         }
         try (PrintWriter w = response.getWriter()) {
-            w.write(mapper.writeValueAsString(body));
+            w.write(JsonUtil.toJsonExcludingNulls(body));
         }
     }
 }
