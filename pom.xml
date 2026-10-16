@@ -120,17 +120,17 @@
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-util-core</artifactId>
-                <version>1.2.1</version>
+                <version>1.2.4</version>
             </dependency>
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-util-parser-json</artifactId>
-                <version>1.2.1</version>
+                <version>1.2.4</version>
             </dependency>
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-util-dsl-kernel</artifactId>
-                <version>1.2.1</version>
+                <version>1.2.4</version>
             </dependency>
             <!-- JUnit 5.11.4 / platform 1.11.4：与父链**不同值**、刻意留着（地板 1.0.19 的 junit-bom
                  是 5.9.3）。必须写成按坐标的**直接**条目：import 进来的 BOM 顶不过从 parent 继承来的

@@ -1,6 +1,6 @@
 package com.zifang.z.script.engine;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zifang.util.json.JsonUtil;
 import com.zifang.z.mcp.api.dto.CallToolResult;
 import com.zifang.z.mcp.core.registry.McpRegistry;
 import com.zifang.z.script.core.domain.entity.Script;
@@ -42,8 +42,6 @@ import java.util.Map;
 public class ScriptMcpAdapter {
 
     private static final Logger log = LogManager.getLogger(ScriptMcpAdapter.class);
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /** 脚本没填 inputSchema 时的兜底: 协议要求 inputSchema 必须是对象且不得为 null. */
     private static final String EMPTY_OBJECT_SCHEMA = "{\"type\":\"object\",\"properties\":{}}";
@@ -173,7 +171,7 @@ public class ScriptMcpAdapter {
             return (String) value;
         }
         try {
-            return MAPPER.writeValueAsString(value);
+            return JsonUtil.toJson(value);
         } catch (Exception e) {
             return String.valueOf(value);
         }
