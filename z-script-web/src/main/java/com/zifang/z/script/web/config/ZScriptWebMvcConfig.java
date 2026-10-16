@@ -1,6 +1,7 @@
 package com.zifang.z.script.web.config;
 
 import com.zifang.z.script.web.interceptor.ApiKeyAuthInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -9,7 +10,6 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
-import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +37,7 @@ import java.util.List;
 @Configuration
 public class ZScriptWebMvcConfig implements WebMvcConfigurer {
 
-    @Resource
+    @Autowired
     private ApiKeyAuthInterceptor apiKeyAuthInterceptor;
 
     /**
