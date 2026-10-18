@@ -13,9 +13,15 @@ export default defineConfig({
     },
     build: {
         lib: {
-            entry: path.resolve(__dirname, 'src/index.jsx'),
+            // 两个 entry 对应 package.json 的 exports 两张脸：`./dist/index.js`（.）与
+            // `./dist/pages.js`（./pages，lead 005 §8.2/§8.6 #3 的 routes 清单）。
+            // 原来只声明了 index 一个 entry，产物里根本没有 pages.js，
+            // 而 exports 还指着它 —— 装到宿主上 import '.../pages' 直接 module not found。
+            entry: {
+                index: path.resolve(__dirname, 'src/index.jsx'),
+                pages: path.resolve(__dirname, 'src/pages.js'),
+            },
             formats: ['es'],
-            fileName: () => 'index.js',
         },
         // ⚠️ Vite 没有 build.external，external 必须挂在 rollupOptions 下，
         // 否则 antd/react 会被整包打进组件层产物（实测 1.75MB）。
