@@ -16,7 +16,7 @@
 | **仓库** | `z-script`（聚合 pom，`<packaging>pom</packaging>`） |
 | **Maven 坐标** | `io.github.yuku123:z-script:${revision}`；库件 `z-script-core` / `-engine` / `-web` / `-scene` / `-scene-http` |
 | **当前版本** | `1.0.1`（根 POM `<revision>`，CI-friendly versions + flatten-maven-plugin `flattenMode=oss`） |
-| **父项目** | `io.github.yuku123:z-boot-parent:1.0.21`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘）；实测父链：地板 `z-boot-dependencies:1.0.20` + 兄弟仓权威 `z-boot-fleet:1.0.1`（fleet 里 `z-script.version=1.0.1`、`z-util.version=1.0.14`） |
+| **父项目** | `io.github.yuku123:z-boot-parent:1.1.0`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘）；父链自带第三方地板与兄弟仓权威表（其中 `z-script.version=1.0.1`、`z-util.version=1.0.14`） |
 | **Maven Central** | **已发布**：上述 6 个库坐标的 `1.0.0` 与 `1.0.1` 从 repo1 回读全部 200（`io.github.yuku123/<artifactId>/<version>/…-<version>.pom`）。唯一例外是应用包：`z-script-admin:1.0.0` = 200（历史漏发，`central-publishing` 插件不认 `maven.deploy.skip`），`1.0.1` = 404 —— 已在 `central` profile 用 `excludeArtifacts` 挡住 |
 | **默认端口** | `8086`（`SERVER_PORT` 可覆盖）· `server.servlet.context-path: /script` |
 | **运行口径** | Java 8（父链 `maven.compiler.source/target=8`，class major 52）· Spring Boot 2.7.18 |
@@ -86,7 +86,7 @@
 
 ```
 z-script/
-├── pom.xml                     # 聚合 POM：parent z-boot-parent:1.0.21，<revision>=1.0.1 统一版本
+├── pom.xml                     # 聚合 POM：parent z-boot-parent:1.1.0，<revision>=1.0.1 统一版本
 ├── z-script-core/              # 领域层：17 张表的实体 + MyBatis-Plus Mapper + Service（App/ApiKey/Script/Version/Tag/Quota/InvokeLog/Mock*）
 ├── z-script-engine/            # 引擎层：ScriptEngine + sandbox/{El,Groovy}Sandbox、MockEngine、Assertion、Recorder/Playback、FaultInjection、ScriptMcpAdapter
 ├── z-script-web/               # Starter 层：19 个 Controller + ApiKeyAuthInterceptor + 自动装配（spring.factories）
@@ -109,8 +109,8 @@ z-script/
 | 层级 | 技术 |
 |------|------|
 | 语言 / 运行时 | Java 8（父链 `java.version=1.8`，产物 class major 52） |
-| 框架 | Spring Boot 2.7.18（由父链 `z-boot-parent:1.0.21` → 地板 `z-boot-dependencies:1.0.20` 供给） |
-| 兄弟仓权威 | `z-boot-fleet:1.0.1`（本仓 `z-script-web` 直接引 `z-boot-web-starter` / `z-boot-datasource-starter`） |
+| 框架 | Spring Boot 2.7.18（由父链 `z-boot-parent:1.1.0` 自带的第三方地板供给） |
+| 兄弟仓权威 | `z-boot-parent` 的兄弟仓权威表（本仓 `z-script-web` 直接引 `z-boot-web-starter` / `z-boot-datasource-starter`） |
 | 工具 | `z-util-core` / `z-util-http` / `z-util-parser-json` / `z-util-expr-{el,groovy,lua,sql,js}` — 实测解析到 `1.0.14` |
 | 持久层 | MyBatis-Plus 3.5.7 + mybatis 3.5.16 + Druid 1.2.23（均由地板传递，本仓不钉版本） |
 | 数据库 | MySQL 8（`mysql-connector-j` 8.4.0） |
@@ -132,8 +132,8 @@ mvn -pl z-script-admin -am package              # 产物 z-script-admin/target/z
 mvn -pl z-script-admin -am package -Dfrontend.skip=true   # 只发库/CI：跳过前端，jar 能出但 /script/ 404
 ```
 
-第三方版本一律由 `z-boot-parent` → `z-boot-dependencies`（地板）+ `z-boot-fleet`（权威表）供给，
-模块 POM 里不应再出现字面版本钉；报找不到版本时先确认能解析到 `io.github.yuku123:z-boot-parent:1.0.21`。
+第三方版本一律由 `z-boot-parent:1.1.0` 供给（第三方地板与兄弟仓权威表均已并入 parent 自身），
+模块 POM 里不应再出现字面版本钉；报找不到版本时先确认能解析到 `io.github.yuku123:z-boot-parent:1.1.0`。
 
 ### 建库
 
@@ -189,7 +189,7 @@ z:
 </dependency>
 ```
 
-版本交给 `z-boot-fleet` 锁也可以（fleet 1.0.1 的 `z-script.version` 正是 `1.0.1`）。引入即自动装配：
+版本交给 `z-boot-parent` 的兄弟仓权威表锁也可以（其 `z-script.version` 正是 `1.0.1`）。引入即自动装配：
 `META-INF/spring.factories` → `ZScriptWebAutoConfiguration`（`@ComponentScan("com.zifang.z.script")` + 6 个引擎 Bean）；
 要用链路编排再单独引 `z-script-scene-http`（其 `SceneHttpAutoConfiguration` 的 `spring.factories` 键已在孵化时补齐）。
 z-boot 侧另有聚合 starter `z-boot-script-starter`（依赖 `z-script-web`），进程内跑整套脚本/Mock 能力，无需独立部署 admin。
