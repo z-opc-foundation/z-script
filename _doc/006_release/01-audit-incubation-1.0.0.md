@@ -66,7 +66,7 @@
 
 ### WARN-005：文档型 WARN
 - 接口文档（Knife4j 4.1.0 / springdoc 1.6.15）是 z-boot-web-starter **传递**带来的，本仓 pom 未声明；
-  上游 starter 升级会连带影响 `/script/doc.html` 与 `/script/v3/api-docs`。已在 `_doc/002_deploy/z-script-admin.md` 写明。
+  上游 starter 升级会连带影响 `/script/doc.html` 与 `/script/v3/api-docs`。已在 `_doc/002_deploy/01-deploy-runbook.md` 写明。
 - 控制台 UI 目前只覆盖脚本列表 / Mock 端点列表 / 执行 / 上下线 / 签发 AK；
   版本灰度、场景状态机、录制回放无 UI。属已知范围边界，非缺陷。
 

@@ -23,7 +23,7 @@
 | **最近更新** | 2026-09-30 |
 
 > 孵化初期这批库确实还没上 Central；现在的实测结论是「已发布」，且 admin 的漏发已收口。
-> 编译建议 JDK 17、运行 JDK 8（见 [`_doc/002_deploy/z-script-admin.md`](_doc/002_deploy/z-script-admin.md)）；
+> 编译建议 JDK 17、运行 JDK 8（见 [`_doc/002_deploy/01-deploy-runbook.md`](_doc/002_deploy/01-deploy-runbook.md)）；
 > CI [`publish-central.yml`](.github/workflows/publish-central.yml) 走 temurin 8：先校验标签版本形状、探一次
 > repo1 占位，再 `mvn -B test -Drevision=<tag>` 跑测试（本仓没有 ci.yml，这份 publish 是唯一 CI —— 实测 36 项：
 > engine 15 + scene-http 21），最后 `mvn -B -ntp deploy -Pcentral -DskipTests -Drevision=<tag>`。
@@ -77,7 +77,7 @@
 - 已知边界（如实记录）：scriptCode 从 URI 解析，管理面端点解析不出 → `SPECIFIC` 的应用调不到 `list`/`publish`，
   控制台用的应用应保持 `ALL`；`READ_ONLY` 目前是空实现（与 `ALL` 等价）；
   HMAC 签名只对 GET / 无体请求可靠（`ApiKeyAuthInterceptor.readBody()` 直读 input stream，
-  javadoc 引用的 `ContentCachingRequestWrapperFilter` 实测**类不存在**，见 [`_doc/006_release/audit-incubation-1.0.0.md`](_doc/006_release/audit-incubation-1.0.0.md) WARN-004）。
+  javadoc 引用的 `ContentCachingRequestWrapperFilter` 实测**类不存在**，见 [`_doc/006_release/01-audit-incubation-1.0.0.md`](_doc/006_release/01-audit-incubation-1.0.0.md) WARN-004）。
 - 整体关掉鉴权只留了一个开关，且是 **JVM system property**：`-Dz.script.api-key.enabled=false`（仅本机排障，生产禁用）。
 
 ---
@@ -260,8 +260,8 @@ mock 端点响应注入 / JSON round-trip）与 `VariableReplacerTest`。
 
 已知口径：本仓刻意把 JUnit 钉在 5.11.4 / platform 1.11.4 并要求 surefire 3.5.4（写成 import BOM 顶不过
 父链继承来的直接 DM），跟着父链降回 2.22.2 会同时换掉执行器与用例计数口径。`z-script-core` / `z-script-web`
-目前没有测试类 —— 鉴权链与 Controller 的行为靠 [`_doc/002_deploy/z-script-admin.md`](_doc/002_deploy/z-script-admin.md)
-里的 curl 清单人工回归，改拦截器请照着 `_doc/006_release/audit-incubation-1.0.0.md` 的复核命令走一遍。
+目前没有测试类 —— 鉴权链与 Controller 的行为靠 [`_doc/002_deploy/01-deploy-runbook.md`](_doc/002_deploy/01-deploy-runbook.md)
+里的 curl 清单人工回归，改拦截器请照着 `_doc/006_release/01-audit-incubation-1.0.0.md` 的复核命令走一遍。
 
 ---
 
@@ -325,6 +325,7 @@ _Maintained by the z-opc-foundation organization._
 
 ## 文档目录
 
+- [`_doc/008_troubleshooting/`](_doc/008_troubleshooting/) — 踩坑与失败要点（测试必须跑在 JDK 17 或更低）
 本项目文档统一收口在 `_doc/` 下：
 
 - [`_doc/001_arch/`](_doc/001_arch/) — 架构文档：
@@ -334,7 +335,7 @@ _Maintained by the z-opc-foundation organization._
 
 - [`_doc/002_deploy/`](_doc/002_deploy/) — 部署与运行：
   - [`init.sql`](_doc/002_deploy/init.sql) — 建库建表 + 幂等 seed（17 张表 + 3 条），可反复执行，含 `information_schema` 自检
-  - [`z-script-admin.md`](_doc/002_deploy/z-script-admin.md) — 运行手册：端口与路径、启动与打包、配置项、
+  - [`01-deploy-runbook.md`](_doc/002_deploy/01-deploy-runbook.md) — 运行手册：端口与路径、启动与打包、配置项、
     鉴权错误码表、API 速查、接口文档入口、表结构、控制台、部署形态、故障排查
 
 - [`_doc/003_script/`](_doc/003_script/) — 构建与发布脚本：
@@ -343,7 +344,7 @@ _Maintained by the z-opc-foundation organization._
   - [`build.sh`](_doc/003_script/build.sh) · [`package.sh`](_doc/003_script/package.sh) — **模板残留，本仓不可用**（引用不存在的 `pom.xml` / `Dockerfile` / `z-script-server` 模块）
 
 - `_doc/004_skill/` — AI skill 与审计记录：
-  - [`audit-incubation-1.0.0.md`](_doc/006_release/audit-incubation-1.0.0.md) — 1.0.0 孵化入库审计：WARN-001（`/run/**` 免鉴权）、WARN-002（SPECIFIC 恒 403）、WARN-003（K8s 探针路径）已修；WARN-004（带 body 的 HMAC 验签）已记录未修；WARN-005 为文档型；附复核命令
+  - [`01-audit-incubation-1.0.0.md`](_doc/006_release/01-audit-incubation-1.0.0.md) — 1.0.0 孵化入库审计：WARN-001（`/run/**` 免鉴权）、WARN-002（SPECIFIC 恒 403）、WARN-003（K8s 探针路径）已修；WARN-004（带 body 的 HMAC 验签）已记录未修；WARN-005 为文档型；附复核命令
 
 配套文档（不在 `_doc/` 下，链接同样实测有效）：
 [`_frontend/README.md`](_frontend/README.md) — 两层 npm 工程与 vite `base` 必须等于 `/script/` 的约定；

@@ -64,6 +64,6 @@ Homebrew 的 maven 在 `JAVA_HOME` 为空时回落到它自带的 openjdk 23。
 再 `mvn -v` 确认测试 JVM 到底是几，别看 `java -version`。
 
 同一类"环境制造假缺陷"的兄弟案例见各仓 `_doc/`：
-`z-bot/_doc/005_testing/MCP-TEST-ENV.md`（缺 Python MCP SDK）、
-`z-skill/_doc/TEST-CORPUS-DEP.md`（缺 playwright-core 语料）。
+`z-bot/_doc/005_testing/01-mcp-test-env.md`（缺 Python MCP SDK）、
+`z-skill/_doc/008_troubleshooting/01-test-corpus-dependency.md`（缺 playwright-core 语料）。
 共同形状：**一批测试集体失败、且失败信息与断言内容无关** ⇒ 先查环境，别改产品代码。
