@@ -15,8 +15,8 @@
 |------|-----|
 | **仓库** | `z-script`（聚合 pom，`<packaging>pom</packaging>`） |
 | **Maven 坐标** | `io.github.yuku123:z-script:${revision}`；库件 `z-script-core` / `-engine` / `-web` / `-scene` / `-scene-http` |
-| **当前版本** | `1.0.1`（根 POM `<revision>`，CI-friendly versions + flatten-maven-plugin `flattenMode=oss`） |
-| **父项目** | `io.github.yuku123:z-boot-parent:1.1.0`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘）；父链自带第三方地板与兄弟仓权威表（其中 `z-script.version=1.0.1`、`z-util.version=1.0.14`） |
+| **当前版本** | `1.0.2`（根 POM `<revision>`，CI-friendly versions + flatten-maven-plugin `flattenMode=oss`） |
+| **父项目** | `io.github.yuku123:z-boot-parent:1.1.0`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘）；父链自带第三方地板与兄弟仓权威表（其中 `z-script.version=1.0.2`、`z-util.version=1.0.14`） |
 | **Maven Central** | **已发布**：上述 6 个库坐标的 `1.0.0` 与 `1.0.1` 从 repo1 回读全部 200（`io.github.yuku123/<artifactId>/<version>/…-<version>.pom`）。唯一例外是应用包：`z-script-admin:1.0.0` = 200（历史漏发，`central-publishing` 插件不认 `maven.deploy.skip`），`1.0.1` = 404 —— 已在 `central` profile 用 `excludeArtifacts` 挡住 |
 | **默认端口** | `8086`（`SERVER_PORT` 可覆盖）· `server.servlet.context-path: /script` |
 | **运行口径** | Java 8（父链 `maven.compiler.source/target=8`，class major 52）· Spring Boot 2.7.18 |
@@ -33,7 +33,7 @@
 
 ## 🎯 能力清单
 
-每一条都对应到仓里真实的类或端点（`z-script-web` 下实测 19 个 Controller，`z-script-scene-http` 再加 1 个，共 20 个）：
+每一条都对应到仓里真实的类或端点（`z-script-web` 下实测 20 个 Controller，`z-script-scene-http` 再加 1 个，共 21 个）：
 
 | 能力 | 入口 | 说明 |
 |------|------|------|
@@ -86,10 +86,10 @@
 
 ```
 z-script/
-├── pom.xml                     # 聚合 POM：parent z-boot-parent:1.1.0，<revision>=1.0.1 统一版本
+├── pom.xml                     # 聚合 POM：parent z-boot-parent:1.1.0，<revision>=1.0.2 统一版本
 ├── z-script-core/              # 领域层：17 张表的实体 + MyBatis-Plus Mapper + Service（App/ApiKey/Script/Version/Tag/Quota/InvokeLog/Mock*）
 ├── z-script-engine/            # 引擎层：ScriptEngine + sandbox/{El,Groovy}Sandbox、MockEngine、Assertion、Recorder/Playback、FaultInjection、ScriptMcpAdapter
-├── z-script-web/               # Starter 层：19 个 Controller + ApiKeyAuthInterceptor + 自动装配（spring.factories）
+├── z-script-web/               # Starter 层：20 个 Controller + ApiKeyAuthInterceptor + 自动装配（spring.factories）
 ├── z-script-scene/             # 聚合 pom
 │   └── z-script-scene-http/    # HTTP 链路编排：HttpChainExecutor + /api/scene-http
 ├── z-script-admin/             # 可执行单体（内嵌 SPA，exec classifier）；留 reactor 但 maven.deploy.skip=true
@@ -128,7 +128,7 @@ z-script/
 
 ```bash
 # 有 node 环境时由 frontend-maven-plugin 自己装 node，无需本机预装
-mvn -pl z-script-admin -am package              # 产物 z-script-admin/target/z-script-admin-1.0.1-exec.jar
+mvn -pl z-script-admin -am package              # 产物 z-script-admin/target/z-script-admin-1.0.2-exec.jar
 mvn -pl z-script-admin -am package -Dfrontend.skip=true   # 只发库/CI：跳过前端，jar 能出但 /script/ 404
 ```
 
@@ -145,7 +145,7 @@ mysql -h127.0.0.1 -P3306 -uroot z_script < _doc/002_deploy/init.sql   # 幂等�
 ### 起服务
 
 ```bash
-java -jar z-script-admin/target/z-script-admin-1.0.1-exec.jar \
+java -jar z-script-admin/target/z-script-admin-1.0.2-exec.jar \
     --z.base.db.script.host=127.0.0.1 --z.base.db.script.username=root
 # 控制台 http://localhost:8086/script/ · Knife4j /script/doc.html · /script/swagger-ui/index.html · /script/v3/api-docs
 ```
@@ -185,11 +185,11 @@ z:
 <dependency>
     <groupId>io.github.yuku123</groupId>
     <artifactId>z-script-web</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
-版本交给 `z-boot-parent` 的兄弟仓权威表锁也可以（其 `z-script.version` 正是 `1.0.1`）。引入即自动装配：
+版本交给 `z-boot-parent` 的兄弟仓权威表锁也可以（其 `z-script.version` 正是 `1.0.2`）。引入即自动装配：
 `META-INF/spring.factories` → `ZScriptWebAutoConfiguration`（`@ComponentScan("com.zifang.z.script")` + 6 个引擎 Bean）；
 要用链路编排再单独引 `z-script-scene-http`（其 `SceneHttpAutoConfiguration` 的 `spring.factories` 键已在孵化时补齐）。
 z-boot 侧另有聚合 starter `z-boot-script-starter`（依赖 `z-script-web`），进程内跑整套脚本/Mock 能力，无需独立部署 admin。
@@ -252,14 +252,15 @@ curl http://localhost:8086/script/api/mock/hello -H "X-Api-Key: zsk_live_xxx"   
 mvn test
 ```
 
-实测仓内只有 3 个测试类，全是纯单元测试，**不连数据库、不起网络**：
+仓内的测试类全是纯单元测试，**不连数据库、不起网络**：
 `z-script-engine` 的 `ScriptSandboxTest`（沙箱放行普通算术，拦下 `System.exit`、`Runtime.exec`、
 全限定 Runtime、`String.execute` RCE、`Class.forName` 反射、`getClass` 逃逸），
 `z-script-scene-http` 的 `HttpChainExecutorTest`（空链路 / 变量替换 / 断言失败 / `stopOnFail` /
-mock 端点响应注入 / JSON round-trip）与 `VariableReplacerTest`。
+mock 端点响应注入 / JSON round-trip）与 `VariableReplacerTest`，
+以及 `z-script-core` 的 `ReadmeClaimsTest`（本 README 定量主张与源码重算值的对账守卫）。
 
 已知口径：本仓刻意把 JUnit 钉在 5.11.4 / platform 1.11.4 并要求 surefire 3.5.4（写成 import BOM 顶不过
-父链继承来的直接 DM），跟着父链降回 2.22.2 会同时换掉执行器与用例计数口径。`z-script-core` / `z-script-web`
+父链继承来的直接 DM），跟着父链降回 2.22.2 会同时换掉执行器与用例计数口径。`z-script-web`
 目前没有测试类 —— 鉴权链与 Controller 的行为靠 [`_doc/002_deploy/01-deploy-runbook.md`](_doc/002_deploy/01-deploy-runbook.md)
 里的 curl 清单人工回归，改拦截器请照着 `_doc/006_release/01-audit-incubation-1.0.0.md` 的复核命令走一遍。
 
