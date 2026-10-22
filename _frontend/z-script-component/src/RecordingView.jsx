@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    Table, Tag, Button, Space, Empty, Modal, Input, Form, message, Drawer, Tabs, Popconfirm, Select, Tooltip, Typography, Alert,
+    Table, Tag, Button, Space, Modal, Input, Form, message, Drawer, Tabs, Popconfirm, Select, Tooltip, Typography, Alert,
 } from 'antd';
-import { PlayCircleOutlined, ReloadOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { PlayCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { EmptyState, ErrorState, RefreshButton, TableToolbar } from '@yuku123/z-frontend-common/ui';
 
 // Mock 录制与回放面板。
 // request 契约与 SPA 一致：request('mock-platform/...')，路径相对 /api/，401 时抛错。
@@ -40,12 +41,15 @@ const StatusTag = ({ status }) =>
 export default function RecordingView({ request, title = '录制 / 回放' }) {
     const [recordings, setRecordings] = useState([]);
     const [loading, setLoading] = useState(false);
+    // 列表加载失败是页面级失败态：交给 ErrorState 就地展示（可重试），不再只弹 toast
+    const [listError, setListError] = useState(null);
     const [statusFilter, setStatusFilter] = useState(null);
 
     // 详情抽屉
     const [active, setActive] = useState(null); // 选中的 MockRecording 行
     const [requests, setRequests] = useState([]);
     const [requestsLoading, setRequestsLoading] = useState(false);
+    const [requestsError, setRequestsError] = useState(null);
 
     // 开启录制 modal
     const [startOpen, setStartOpen] = useState(false);
@@ -61,12 +65,13 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
 
     const loadList = useCallback(async () => {
         setLoading(true);
+        setListError(null);
         try {
             const res = await request('mock-platform/recordings/list');
             const body = await res.json();
             setRecordings(Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []));
         } catch (e) {
-            message.error(`加载录制列表失败: ${e.message || e}`);
+            setListError(e);
         } finally {
             setLoading(false);
         }
@@ -78,12 +83,13 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
 
     const loadRequests = useCallback(async (recordingCode) => {
         setRequestsLoading(true);
+        setRequestsError(null);
         try {
             const res = await request(`mock-platform/recordings/requests?recordingCode=${encodeURIComponent(recordingCode)}`);
             const body = await res.json();
             setRequests(Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []));
         } catch (e) {
-            message.error(`加载请求列表失败: ${e.message || e}`);
+            setRequestsError(e);
             setRequests([]);
         } finally {
             setRequestsLoading(false);
@@ -399,14 +405,23 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
         <div data-component="z-script-recording">
             {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
 
-            <Space style={{ marginBottom: 16 }} wrap>
-                <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => setStartOpen(true)}>
-                    开启录制
-                </Button>
-                <Button icon={<ReloadOutlined />} onClick={loadList} loading={loading}>
-                    刷新
-                </Button>
-            </Space>
+            {/* 工具条走共享 TableToolbar：操作按钮统一放右侧（lead 008 全仓统一布局） */}
+            <TableToolbar
+                right={
+                    <>
+                        <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => setStartOpen(true)}>
+                            开启录制
+                        </Button>
+                        <RefreshButton onClick={loadList} loading={loading} />
+                    </>
+                }
+            />
+
+            {listError && (
+                <div style={{ marginBottom: 16 }}>
+                    <ErrorState error={listError} title="加载录制列表失败" onRetry={loadList} />
+                </div>
+            )}
 
             <Table
                 rowKey={(r) => r.recordingCode}
@@ -415,7 +430,7 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
                 loading={loading}
                 onChange={(_, filters) => setStatusFilter(filters?.recordStatus?.[0] ?? null)}
                 pagination={{ pageSize: 10, showSizeChanger: false, hideOnSinglePage: true }}
-                locale={{ emptyText: <Empty description="暂无录制会话 — 点「开启录制」开始" /> }}
+                locale={{ emptyText: <EmptyState title="暂无录制会话" description="点「开启录制」开始" /> }}
                 onRow={(row) => ({ onClick: () => openDetail(row), style: { cursor: 'pointer' } })}
             />
 
@@ -441,33 +456,44 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
                                 key: 'requests',
                                 label: `请求列表 (${requests.length})`,
                                 children: (
-                                    <Table
-                                        rowKey={(r) => r.id ?? r.sequence}
-                                        size="small"
-                                        columns={requestColumns}
-                                        dataSource={requests}
-                                        loading={requestsLoading}
-                                        pagination={{ pageSize: 15, showSizeChanger: false, hideOnSinglePage: true }}
-                                        locale={{ emptyText: <Empty description={`尚无请求 — 把流量发到 /api/mock/${active.recordingCode}/... 即会被采集`} /> }}
-                                        expandable={{
-                                            expandedRowRender: (r) => (
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                                    <div>
-                                                        <b>请求 Body</b>
-                                                        <pre style={{ maxHeight: 200, overflow: 'auto', background: '#fafafa', padding: 8, fontSize: 12 }}>
-                                                            {prettyJson(r.requestBody)}
-                                                        </pre>
+                                    <>
+                                        {requestsError && (
+                                            <div style={{ marginBottom: 12 }}>
+                                                <ErrorState
+                                                    error={requestsError}
+                                                    title="加载请求列表失败"
+                                                    onRetry={() => loadRequests(active.recordingCode)}
+                                                />
+                                            </div>
+                                        )}
+                                        <Table
+                                            rowKey={(r) => r.id ?? r.sequence}
+                                            size="small"
+                                            columns={requestColumns}
+                                            dataSource={requests}
+                                            loading={requestsLoading}
+                                            pagination={{ pageSize: 15, showSizeChanger: false, hideOnSinglePage: true }}
+                                            locale={{ emptyText: <EmptyState title="尚无请求" description={`把流量发到 /api/mock/${active.recordingCode}/... 即会被采集`} /> }}
+                                            expandable={{
+                                                expandedRowRender: (r) => (
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                                        <div>
+                                                            <b>请求 Body</b>
+                                                            <pre style={{ maxHeight: 200, overflow: 'auto', background: '#fafafa', padding: 8, fontSize: 12 }}>
+                                                                {prettyJson(r.requestBody)}
+                                                            </pre>
+                                                        </div>
+                                                        <div>
+                                                            <b>响应 Body</b>
+                                                            <pre style={{ maxHeight: 200, overflow: 'auto', background: '#fafafa', padding: 8, fontSize: 12 }}>
+                                                                {prettyJson(r.responseBody)}
+                                                            </pre>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <b>响应 Body</b>
-                                                        <pre style={{ maxHeight: 200, overflow: 'auto', background: '#fafafa', padding: 8, fontSize: 12 }}>
-                                                            {prettyJson(r.responseBody)}
-                                                        </pre>
-                                                    </div>
-                                                </div>
-                                            ),
-                                        }}
-                                    />
+                                                ),
+                                            }}
+                                        />
+                                    </>
                                 ),
                             },
                             {
@@ -503,7 +529,7 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
                                                 />
                                             </>
                                         ) : (
-                                            <Empty description="填目标地址后点回放，逐条重放录制的请求" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                                            <EmptyState title="还没有回放结果" description="填目标地址后点回放，逐条重放录制的请求" size="sm" />
                                         )}
                                     </Space>
                                 ),
@@ -536,7 +562,7 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
                                                 )}
                                             </>
                                         ) : (
-                                            <Empty description="对比录制基线与目标服务的响应差异" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                                            <EmptyState title="还没有对比结果" description="对比录制基线与目标服务的响应差异" size="sm" />
                                         )}
                                     </Space>
                                 ),

@@ -25,8 +25,12 @@ export default defineConfig({
         },
         // ⚠️ Vite 没有 build.external，external 必须挂在 rollupOptions 下，
         // 否则 antd/react 会被整包打进组件层产物（实测 1.75MB）。
+        // ⚠️ rollup 的 external 数组是**精确匹配**：基座的 '/ui' 子路径要单独列，
+        // 只写根路径时 '@yuku123/z-frontend-common/ui' 会被解析并整包打进产物。
         rollupOptions: {
-            external: ['react', 'react-dom', 'react/jsx-runtime', 'antd'],
+            external: ['react', 'react-dom', 'react/jsx-runtime', 'antd', '@ant-design/icons',
+                       '@yuku123/z-frontend-common', '@yuku123/z-frontend-common/ui',
+                       '@yuku123/z-frontend-common/ui/echarts'],
         },
         outDir: 'dist',
         emptyOutDir: true,

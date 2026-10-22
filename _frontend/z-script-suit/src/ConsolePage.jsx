@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Layout, Tabs, Typography, Button, Space, Input, message, Alert, Modal, Select, Radio } from 'antd';
+import { Layout, Tabs, Typography, Button, Space, Input, message, Modal, Select, Radio } from 'antd';
+import { ErrorState, RefreshButton } from '@yuku123/z-frontend-common/ui';
 import { ScriptListView, MockEndpointListView, AppListView, ScriptVersionView, RecordingView, ScenarioView } from '@yuku123/z-script-component';
 
 const { Header, Content } = Layout;
@@ -262,24 +263,25 @@ export default function ConsolePage() {
           <Button size="small" onClick={issueKey}>
             签发 AK
           </Button>
-          <Button onClick={load} loading={loading}>
-            刷新
-          </Button>
+          <RefreshButton onClick={load} loading={loading} />
         </Space>
       </Header>
       <Content style={{ padding: 24, background: '#f5f5f5' }}>
         {error && (
-          <Alert
-            type="warning"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message={`加载失败：${error}`}
-            description={
-              error === 'MISSING_API_KEY'
-                ? '填一个 app 名后点「签发 AK」，或把已有 AK 粘贴到右上角输入框。z-script 全站只认 app + AK。'
-                : '请确认 z-script-admin 已启动、MySQL 中已执行 _doc/002_deploy/init.sql。'
-            }
-          />
+          // 整页加载失败是页面级失败态：就地展示 ErrorState 并给重试入口，
+          // 比一条飘过去的 Alert 更明确（也要让用户知道还能再点一次刷新）。
+          <div style={{ marginBottom: 16 }}>
+            <ErrorState
+              error={error}
+              title="加载失败"
+              description={
+                error === 'MISSING_API_KEY'
+                  ? '填一个 app 名后点「签发 AK」，或把已有 AK 粘贴到右上角输入框。z-script 全站只认 app + AK。'
+                  : `原因: ${error}。请确认 z-script-admin 已启动、MySQL 中已执行 _doc/002_deploy/init.sql。`
+              }
+              onRetry={load}
+            />
+          </div>
         )}
         <Tabs
           defaultActiveKey="scripts"

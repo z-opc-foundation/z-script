@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Table, Tag, Button, Space, Empty, Select, Modal, Input, InputNumber, Form, Alert } from 'antd';
+import { Table, Tag, Button, Space, Select, Modal, Input, InputNumber, Form, Alert } from 'antd';
+import { EmptyState, TableToolbar } from '@yuku123/z-frontend-common/ui';
 
 // 脚本版本/灰度面板。规范 §5：组件层只接 props，不自己 fetch。
 // 数据形状来自 ScriptVersionController：
@@ -201,21 +202,26 @@ export default function ScriptVersionView({
         <div data-component="z-script-version-list">
             {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
 
-            <Space style={{ marginBottom: 16 }} wrap>
-                <Select
-                    style={{ minWidth: 280 }}
-                    placeholder="选一个脚本查看版本"
-                    value={selectedScriptId}
-                    onChange={(v) => onSelectScript?.(v)}
-                    options={scriptOptions}
-                    showSearch
-                    optionFilterProp="label"
-                    notFoundContent="暂无脚本（先去「脚本」栏创建）"
-                />
-                <Button type="primary" disabled={!selectedScript} onClick={openPublish}>
-                    发布新版本
-                </Button>
-            </Space>
+            {/* 工具条走共享 TableToolbar：左侧脚本选择、右侧发布动作（lead 008 全仓统一布局） */}
+            <TableToolbar
+                left={
+                    <Select
+                        style={{ minWidth: 280 }}
+                        placeholder="选一个脚本查看版本"
+                        value={selectedScriptId}
+                        onChange={(v) => onSelectScript?.(v)}
+                        options={scriptOptions}
+                        showSearch
+                        optionFilterProp="label"
+                        notFoundContent="暂无脚本（先去「脚本」栏创建）"
+                    />
+                }
+                right={
+                    <Button type="primary" disabled={!selectedScript} onClick={openPublish}>
+                        发布新版本
+                    </Button>
+                }
+            />
 
             {!selectedScript && (
                 <Alert
@@ -232,7 +238,7 @@ export default function ScriptVersionView({
                 dataSource={versions}
                 loading={loading}
                 pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <Empty description={selectedScript ? '该脚本暂无版本' : '请先选脚本'} /> }}
+                locale={{ emptyText: <EmptyState title={selectedScript ? '该脚本暂无版本' : '请先选脚本'} description={selectedScript ? '点右上角「发布新版本」创建第一个版本' : '版本/灰度按脚本隔离，先在上方选一个脚本'} /> }}
             />
 
             <Modal

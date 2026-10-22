@@ -1,5 +1,6 @@
 import React from 'react';
-import { Table, Tag, Button, Space, Empty } from 'antd';
+import { Table, Tag, Button, Space } from 'antd';
+import { EmptyState } from '@yuku123/z-frontend-common/ui';
 
 // 应用列表：应用是权限模型的中心（AK 挂应用、脚本列表挂应用）。
 // 规范 §5：接 props 不 fetch；scope/脚本列表的编辑动作全部由父层通过回调决定。
@@ -74,7 +75,7 @@ export default function AppListView({
                 dataSource={apps}
                 loading={loading}
                 pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <Empty description="暂无应用（签发 AK 时会自动创建）" /> }}
+                locale={{ emptyText: <EmptyState title="暂无应用" description="签发 AK 时会自动创建" /> }}
             />
         </div>
     );

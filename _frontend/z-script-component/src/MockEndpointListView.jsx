@@ -1,5 +1,6 @@
 import React from 'react';
-import { Table, Tag, Switch, Empty } from 'antd';
+import { Table, Tag, Switch } from 'antd';
+import { EmptyState } from '@yuku123/z-frontend-common/ui';
 
 // Mock 端点列表：path + method + 匹配规则 + 响应模板摘要。
 // 规范 §5：接 props 不 fetch。
@@ -43,7 +44,7 @@ export default function MockEndpointListView({ endpoints = [], loading = false, 
                 dataSource={endpoints}
                 loading={loading}
                 pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <Empty description="暂无 Mock 端点" /> }}
+                locale={{ emptyText: <EmptyState title="暂无 Mock 端点" description="录制回放后可一键导入为 Mock 端点" /> }}
             />
         </div>
     );

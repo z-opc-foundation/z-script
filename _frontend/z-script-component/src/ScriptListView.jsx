@@ -1,5 +1,6 @@
 import React from 'react';
-import { Table, Tag, Button, Space, Empty } from 'antd';
+import { Table, Tag, Button, Space } from 'antd';
+import { EmptyState } from '@yuku123/z-frontend-common/ui';
 
 // 规范 §5：组件层只接 props，不自己 fetch —— 数据源由父项目决定（admin / 其它实例 / mock）。
 const DSL_COLOR = { GROOVY: 'purple', JS: 'blue', LUA: 'red', EL: 'green', SQL: 'orange' };
@@ -63,7 +64,7 @@ export default function ScriptListView({ scripts = [], loading = false, onRun, o
                 dataSource={scripts}
                 loading={loading}
                 pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <Empty description="暂无脚本" /> }}
+                locale={{ emptyText: <EmptyState title="暂无脚本" description="脚本发布后会出现在这里" /> }}
             />
         </div>
     );

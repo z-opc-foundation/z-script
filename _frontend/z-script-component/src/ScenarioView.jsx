@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    Table, Tag, Button, Space, Empty, Modal, Input, Form, message, Drawer, Popconfirm, Alert, Tooltip, Typography, Descriptions, Badge,
+    Table, Tag, Button, Space, Modal, Input, Form, message, Drawer, Popconfirm, Alert, Tooltip, Typography, Descriptions, Badge,
 } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
+import { EmptyState, ErrorState, RefreshButton, TableToolbar } from '@yuku123/z-frontend-common/ui';
 
 // Mock 场景状态机面板。
 // request 契约与 SPA 一致：request('mock-platform/...')，路径相对 /api/。
@@ -29,6 +30,8 @@ const stateColor = (s) => {
 export default function ScenarioView({ request, title = '场景 / 状态机' }) {
     const [scenarios, setScenarios] = useState([]);
     const [loading, setLoading] = useState(false);
+    // 列表加载失败是页面级失败态：交给 ErrorState 就地展示（可重试），不再只弹 toast
+    const [listError, setListError] = useState(null);
 
     // 受控的创建/编辑 Modal（此前用 Modal.open —— antd v5 没有这个 API，一点就崩）
     const [formOpen, setFormOpen] = useState(false);
@@ -39,17 +42,19 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
     const [active, setActive] = useState(null);
     const [instances, setInstances] = useState({});
     const [instancesLoading, setInstancesLoading] = useState(false);
+    const [detailError, setDetailError] = useState(null);
     const [endpoints, setEndpoints] = useState([]);
     const [cases, setCases] = useState([]);
 
     const loadList = useCallback(async () => {
         setLoading(true);
+        setListError(null);
         try {
             const res = await request('mock-platform/scenarios/list');
             const body = await res.json();
             setScenarios(Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []));
         } catch (e) {
-            message.error(`加载场景列表失败: ${e.message || e}`);
+            setListError(e);
         } finally {
             setLoading(false);
         }
@@ -62,6 +67,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
     const loadDetail = useCallback(
         async (scenarioCode) => {
             setInstancesLoading(true);
+            setDetailError(null);
             try {
                 const [instRes, epRes, caseRes] = await Promise.all([
                     request(`mock-platform/scenarios/instances?scenarioCode=${encodeURIComponent(scenarioCode)}`),
@@ -75,7 +81,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                 const cs = await caseRes.json().catch(() => []);
                 setCases(Array.isArray(cs) ? cs : []);
             } catch (e) {
-                message.error(`加载场景详情失败: ${e.message || e}`);
+                setDetailError(e);
             } finally {
                 setInstancesLoading(false);
             }
@@ -309,14 +315,23 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
         <div data-component="z-script-scenario">
             {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
 
-            <Space style={{ marginBottom: 16 }}>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                    新建场景
-                </Button>
-                <Button icon={<ReloadOutlined />} onClick={loadList} loading={loading}>
-                    刷新
-                </Button>
-            </Space>
+            {/* 工具条走共享 TableToolbar：操作按钮统一放右侧（lead 008 全仓统一布局） */}
+            <TableToolbar
+                right={
+                    <>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                            新建场景
+                        </Button>
+                        <RefreshButton onClick={loadList} loading={loading} />
+                    </>
+                }
+            />
+
+            {listError && (
+                <div style={{ marginBottom: 16 }}>
+                    <ErrorState error={listError} title="加载场景列表失败" onRetry={loadList} />
+                </div>
+            )}
 
             <Table
                 rowKey={(r) => r.scenarioCode}
@@ -324,7 +339,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                 dataSource={scenarios}
                 loading={loading}
                 pagination={{ pageSize: 10, showSizeChanger: false, hideOnSinglePage: true }}
-                locale={{ emptyText: <Empty description="暂无场景 — 点「新建场景」开始" /> }}
+                locale={{ emptyText: <EmptyState title="暂无场景" description="点「新建场景」开始" /> }}
                 onRow={(row) => ({ onClick: () => openDetail(row), style: { cursor: 'pointer' } })}
             />
 
@@ -398,6 +413,16 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                             message="实例由调用方带 X-Scenario-Instance 等请求头驱动；没有实例时先去触发一次 Mock 调用。"
                         />
 
+                        {detailError && (
+                            <div style={{ marginBottom: 16 }}>
+                                <ErrorState
+                                    error={detailError}
+                                    title="加载场景详情失败"
+                                    onRetry={() => loadDetail(active.scenarioCode)}
+                                />
+                            </div>
+                        )}
+
                         <Table
                             title={() => <b>运行实例 ({instanceRows.length})</b>}
                             rowKey={(r) => r.instanceKey}
@@ -406,7 +431,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                             dataSource={instanceRows}
                             loading={instancesLoading}
                             pagination={false}
-                            locale={{ emptyText: <Empty description="暂无运行实例" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+                            locale={{ emptyText: <EmptyState title="暂无运行实例" description="触发一次带 X-Scenario-Instance 的 Mock 调用后出现" size="sm" /> }}
                         />
 
                         <Table
@@ -424,7 +449,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                             columns={endpointColumns}
                             dataSource={endpoints}
                             pagination={false}
-                            locale={{ emptyText: <Empty description="暂无关联端点" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+                            locale={{ emptyText: <EmptyState title="暂无关联端点" description="该场景还没有绑定 Mock 端点" size="sm" /> }}
                         />
 
                         <Table
@@ -435,7 +460,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                             columns={caseColumns}
                             dataSource={cases}
                             pagination={false}
-                            locale={{ emptyText: <Empty description="暂无关联用例" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+                            locale={{ emptyText: <EmptyState title="暂无关联用例" description="该场景还没有关联用例" size="sm" /> }}
                         />
                     </>
                 )}
