@@ -98,6 +98,14 @@ public class ZScriptWebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         // 引导：创建 Key 时调用方还没有 Key，这是唯一必须免鉴权的端点。
                         // 精确匹配 /api/script/api-key，不含 /page、/list-enabled、/{id} 等读端点。
+                        //
+                        // TASK-20260925-031 重新评估 /api/script/api-key/** 是否该整体 exclude：
+                        //   结论 = **不整体 exclude**，读端点留在 API Key 关内。
+                        //   理由：整体 exclude 会把读端点放回「任何登录用户可读」的形态，
+                        //   而读端点原来还会原样吐出 api_key 明文与 api_secret_hash —— 那正是本卡要修的泄露面。
+                        //   现在读端点过三道闸：① AK 鉴权（本拦截器）② 归属 + scope 角色（ApiKeyAccessGuard）
+                        //   ③ 出参脱敏（ApiKeyManageVO：api_key 只给掩码，api_secret_hash 不出现在响应体里）。
+                        //   残留面（引导端点免鉴权 ⇒ 谁都能建一把 Key）见 TASK-20260925-031 的提案，未在本卡改动。
                         "/api/script/api-key"
                 );
     }
