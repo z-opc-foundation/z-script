@@ -11,6 +11,7 @@ import { ScenarioView } from '.';
 import { RecordingView } from '.';
 import { AppListView } from '.';
 import { MockEndpointListView } from '.';
+import ComponentDocPage from './pages/ComponentDoc.jsx';
 
 export const appMeta = { title: 'z-script 控制台', short: 'z-script' }
 
@@ -21,4 +22,7 @@ export const routes = [
     { path: '/z-script/script/recording', title: '录制', order: 4, Component: RecordingView },
     { path: '/z-script/script/app', title: '应用', order: 5, Component: AppListView },
     { path: '/z-script/script/mock', title: 'Mock 端点', order: 6, Component: MockEndpointListView },
+    // 组件文档页（lead 008 §7）。本 manifest 没有 menuItems（菜单在 suit 侧），
+    // 路由在这里补一条，主壳按 /z-script/docs 挂载即可。
+    { path: '/z-script/docs', title: '组件文档', order: 7, Component: ComponentDocPage },
 ]
