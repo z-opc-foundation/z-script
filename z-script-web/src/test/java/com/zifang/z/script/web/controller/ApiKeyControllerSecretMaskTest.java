@@ -1,12 +1,12 @@
 package com.zifang.z.script.web.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zifang.util.core.meta.Result;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
 import com.zifang.z.script.core.domain.service.ApiKeyService;
 import com.zifang.z.script.web.dto.ApiKeyManageVO;
+import com.zifang.z.script.web.dto.PageResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +61,7 @@ class ApiKeyControllerSecretMaskTest {
         svc.keys.add(key(1L, "app-a", KEY_A, HASH_A));
         ApiKeyController controller = controllerOf(svc);
 
-        Result<IPage<ApiKeyManageVO>> result = controller.page(1, 20, null, null, requestWith(caller("app-a", "ALL")));
+        Result<PageResult<ApiKeyManageVO>> result = controller.page(1, 20, null, null, requestWith(caller("app-a", "ALL")));
 
         assertTrue(result.isSuccess(), "带有效身份的读请求应当成功");
         String json = mapper.writeValueAsString(result);
@@ -119,7 +119,7 @@ class ApiKeyControllerSecretMaskTest {
         ApiKeyController controller = controllerOf(svc);
 
         // READ_ONLY：读得到
-        Result<IPage<ApiKeyManageVO>> readOnly = controller.page(1, 20, null, null, requestWith(caller("app-a", "READ_ONLY")));
+        Result<PageResult<ApiKeyManageVO>> readOnly = controller.page(1, 20, null, null, requestWith(caller("app-a", "READ_ONLY")));
         assertTrue(readOnly.isSuccess(), "READ_ONLY 应当可读");
 
         // READ_ONLY：改不了
@@ -128,12 +128,12 @@ class ApiKeyControllerSecretMaskTest {
         assertEquals(403, disable.getCode());
 
         // SPECIFIC：管理面进不来
-        Result<IPage<ApiKeyManageVO>> specific = controller.page(1, 20, null, null, requestWith(caller("app-a", "SPECIFIC")));
+        Result<PageResult<ApiKeyManageVO>> specific = controller.page(1, 20, null, null, requestWith(caller("app-a", "SPECIFIC")));
         assertFalse(specific.isSuccess());
         assertEquals(403, specific.getCode());
 
         // 没有 API Key 身份
-        Result<IPage<ApiKeyManageVO>> anonymous = controller.page(1, 20, null, null, requestWith(null));
+        Result<PageResult<ApiKeyManageVO>> anonymous = controller.page(1, 20, null, null, requestWith(null));
         assertFalse(anonymous.isSuccess());
         assertEquals(401, anonymous.getCode());
     }

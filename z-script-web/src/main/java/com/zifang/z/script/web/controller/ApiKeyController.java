@@ -10,6 +10,7 @@ import com.zifang.z.script.core.domain.service.impl.ApiKeyServiceImpl;
 import com.zifang.z.script.web.dto.ApiKeyCreateResponse;
 import com.zifang.z.script.web.dto.ApiKeyManageVO;
 import com.zifang.z.script.web.dto.ApiKeyResetSecretResponse;
+import com.zifang.z.script.web.dto.PageResult;
 import com.zifang.z.script.web.support.ApiKeyAccessGuard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,7 +48,7 @@ public class ApiKeyController {
 
     @Operation(summary = "分页查询 API Key（脱敏 + 只出本应用的 Key）")
     @GetMapping("/page")
-    public Result<IPage<ApiKeyManageVO>> page(
+    public Result<PageResult<ApiKeyManageVO>> page(
             @RequestParam(defaultValue = "1") long current,
             @RequestParam(defaultValue = "20") long size,
             @RequestParam(required = false) String appName,
@@ -55,11 +56,15 @@ public class ApiKeyController {
             HttpServletRequest request) {
         ApiKeyDO caller = ApiKeyAccessGuard.callerOf(request);
         if (caller == null) {
-            return Result.<IPage<ApiKeyManageVO>>fail("NO_API_KEY_IDENTITY: 缺少 API Key 身份").code(401);
+            return Result.<PageResult<ApiKeyManageVO>>fail("NO_API_KEY_IDENTITY: 缺少 API Key 身份").code(401);
         }
         if (!ApiKeyAccessGuard.canRead(caller)) {
-            return Result.<IPage<ApiKeyManageVO>>fail("SCOPE_NOT_ALLOWED: 当前 Key 的 scope 无权读取 API Key 清单").code(403);
+            return Result.<PageResult<ApiKeyManageVO>>fail("SCOPE_NOT_ALLOWED: 当前 Key 的 scope 无权读取 API Key 清单").code(403);
         }
+
+        // 分页参数收敛（TASK-20260925-035）：current 从 1 起，size 上限 PageResult.MAX_PAGE_SIZE。
+        int pageCurrent = PageResult.normalizeCurrent(current);
+        int pageSize = PageResult.normalizeSize(size);
 
         LambdaQueryWrapper<ApiKeyDO> qw = new LambdaQueryWrapper<>();
         // 归属收窄：只查本应用的 Key（app_id 存量整列 NULL，appName 是归属主键）
@@ -77,7 +82,9 @@ public class ApiKeyController {
 
         qw.orderByDesc(ApiKeyDO::getCreateTime);
 
-        IPage<ApiKeyDO> page = apiKeyService.page(new Page<>(current, size), qw);
+        // 真分页 + 真 count：依赖 ScriptMyBatisConfig 里注册的 PaginationInnerInterceptor
+        // （没有它，page() 恒返回全表、total 恒 0 —— TASK-20260925-035 的原始症状）。
+        IPage<ApiKeyDO> page = apiKeyService.page(new Page<>(pageCurrent, pageSize), qw);
         // 二次归属过滤：即便 service/DB 侧漏了过滤，也不把别人的 Key 带出响应体
         List<ApiKeyManageVO> records = new ArrayList<>();
         for (ApiKeyDO row : page.getRecords()) {
@@ -85,9 +92,8 @@ public class ApiKeyController {
                 records.add(ApiKeyManageVO.from(row));
             }
         }
-        Page<ApiKeyManageVO> out = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        out.setRecords(records);
-        return Result.success(out);
+        // total 是服务端 count 出来的真计数（JSON 数字），不是本页行数，也不是字符串 "0"
+        return Result.success(PageResult.of(page, records));
     }
 
     @Operation(summary = "查询所有启用的 Key（脱敏 + 只出本应用的 Key）")
