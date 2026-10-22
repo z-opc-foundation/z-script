@@ -1,6 +1,6 @@
 import React from 'react';
-import { Table, Tag, Button, Space } from 'antd';
-import { EmptyState } from '@yuku123/z-frontend-common/ui';
+import { Tag, Button, Space } from 'antd';
+import { ListTable } from '@yuku123/z-frontend-common/ui';
 
 // 规范 §5：组件层只接 props，不自己 fetch —— 数据源由父项目决定（admin / 其它实例 / mock）。
 const DSL_COLOR = { GROOVY: 'purple', JS: 'blue', LUA: 'red', EL: 'green', SQL: 'orange' };
@@ -57,14 +57,19 @@ export default function ScriptListView({ scripts = [], loading = false, onRun, o
 
     return (
         <div data-component="z-script-script-list">
-            {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
-            <Table
-                rowKey={(r) => r.scriptCode || r.id}
+            {/* 列表页走基座 ListTable（lead 008 §2 规则 2/3/4）：分页 / 过滤 / EmptyState 三件套。
+                分页用基座默认的 DEFAULT_PAGINATION（原来手写的 {pageSize:10, showSizeChanger:false}
+                缺 pageSizeOptions / showTotal），过滤按脚本编码 / 名称端侧过滤。 */}
+            <ListTable
+                cardTitle={title || undefined}
+                rows={scripts}
                 columns={columns}
-                dataSource={scripts}
+                rowKey={(r) => r.scriptCode || r.id}
                 loading={loading}
-                pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <EmptyState title="暂无脚本" description="脚本发布后会出现在这里" /> }}
+                searchKeys="scriptCode,scriptName"
+                searchPlaceholder="按脚本编码 / 名称过滤"
+                emptyTitle="暂无脚本"
+                emptyDescription="脚本发布后会出现在这里"
             />
         </div>
     );

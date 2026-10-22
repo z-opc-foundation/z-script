@@ -1,6 +1,6 @@
 import React from 'react';
-import { Table, Tag, Button, Space } from 'antd';
-import { EmptyState } from '@yuku123/z-frontend-common/ui';
+import { Tag, Button, Space } from 'antd';
+import { ListTable } from '@yuku123/z-frontend-common/ui';
 
 // 应用列表：应用是权限模型的中心（AK 挂应用、脚本列表挂应用）。
 // 规范 §5：接 props 不 fetch；scope/脚本列表的编辑动作全部由父层通过回调决定。
@@ -68,14 +68,19 @@ export default function AppListView({
 
     return (
         <div data-component="z-script-app-list">
-            {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
-            <Table
-                rowKey={(r) => r.appCode || r.id}
+            {/* 列表页走基座 ListTable（lead 008 §2 规则 2/3/4）：分页 / 过滤 / EmptyState 三件套。
+                分页用基座默认的 DEFAULT_PAGINATION（原来手写的 {pageSize:10, showSizeChanger:false}
+                缺 pageSizeOptions / showTotal），过滤按应用编码 / 名称端侧过滤。 */}
+            <ListTable
+                cardTitle={title || undefined}
+                rows={apps}
                 columns={columns}
-                dataSource={apps}
+                rowKey={(r) => r.appCode || r.id}
                 loading={loading}
-                pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <EmptyState title="暂无应用" description="签发 AK 时会自动创建" /> }}
+                searchKeys="appCode,appName"
+                searchPlaceholder="按应用编码 / 名称过滤"
+                emptyTitle="暂无应用"
+                emptyDescription="签发 AK 时会自动创建"
             />
         </div>
     );

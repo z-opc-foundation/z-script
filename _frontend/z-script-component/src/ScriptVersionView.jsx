@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Table, Tag, Button, Space, Select, Modal, Input, InputNumber, Form, Alert } from 'antd';
-import { EmptyState, TableToolbar } from '@yuku123/z-frontend-common/ui';
+import { Tag, Button, Space, Select, Modal, Input, InputNumber, Form, Alert } from 'antd';
+import { ListTable, TableToolbar } from '@yuku123/z-frontend-common/ui';
 
 // 脚本版本/灰度面板。规范 §5：组件层只接 props，不自己 fetch。
 // 数据形状来自 ScriptVersionController：
@@ -200,9 +200,8 @@ export default function ScriptVersionView({
 
     return (
         <div data-component="z-script-version-list">
-            {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
-
-            {/* 工具条走共享 TableToolbar：左侧脚本选择、右侧发布动作（lead 008 全仓统一布局） */}
+            {/* 工具条走共享 TableToolbar：脚本选择器切的是数据源（不是过滤），留在卡片上方；
+                动作按钮（发布新版本）按 §2 放 cardExtra。 */}
             <TableToolbar
                 left={
                     <Select
@@ -216,11 +215,6 @@ export default function ScriptVersionView({
                         notFoundContent="暂无脚本（先去「脚本」栏创建）"
                     />
                 }
-                right={
-                    <Button type="primary" disabled={!selectedScript} onClick={openPublish}>
-                        发布新版本
-                    </Button>
-                }
             />
 
             {!selectedScript && (
@@ -232,13 +226,24 @@ export default function ScriptVersionView({
                 />
             )}
 
-            <Table
-                rowKey={(r) => r.id}
+            {/* 列表页走基座 ListTable（lead 008 §2 规则 2/3/4）：分页 / 过滤 / EmptyState 三件套。
+                分页用基座默认的 DEFAULT_PAGINATION（原来手写的 {pageSize:10, showSizeChanger:false}
+                缺 pageSizeOptions / showTotal），过滤按版本号 / DSL / 变更说明端侧过滤。 */}
+            <ListTable
+                cardTitle={title || undefined}
+                rows={versions}
                 columns={columns}
-                dataSource={versions}
+                rowKey={(r) => r.id}
                 loading={loading}
-                pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <EmptyState title={selectedScript ? '该脚本暂无版本' : '请先选脚本'} description={selectedScript ? '点右上角「发布新版本」创建第一个版本' : '版本/灰度按脚本隔离，先在上方选一个脚本'} /> }}
+                searchKeys="versionNo,dslType,changelog"
+                searchPlaceholder="按版本号 / DSL / 变更说明过滤"
+                emptyTitle={selectedScript ? '该脚本暂无版本' : '请先选脚本'}
+                emptyDescription={selectedScript ? '点右上角「发布新版本」创建第一个版本' : '版本/灰度按脚本隔离，先在上方选一个脚本'}
+                cardExtra={
+                    <Button type="primary" disabled={!selectedScript} onClick={openPublish}>
+                        发布新版本
+                    </Button>
+                }
             />
 
             <Modal

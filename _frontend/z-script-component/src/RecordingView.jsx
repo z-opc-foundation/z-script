@@ -3,7 +3,7 @@ import {
     Table, Tag, Button, Space, Modal, Input, Form, message, Drawer, Tabs, Popconfirm, Select, Tooltip, Typography, Alert,
 } from 'antd';
 import { PlayCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
-import { EmptyState, ErrorState, RefreshButton, TableToolbar } from '@yuku123/z-frontend-common/ui';
+import { EmptyState, ErrorState, ListTable, RefreshButton } from '@yuku123/z-frontend-common/ui';
 
 // Mock 录制与回放面板。
 // request 契约与 SPA 一致：request('mock-platform/...')，路径相对 /api/，401 时抛错。
@@ -403,35 +403,38 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
 
     return (
         <div data-component="z-script-recording">
-            {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
-
-            {/* 工具条走共享 TableToolbar：操作按钮统一放右侧（lead 008 全仓统一布局） */}
-            <TableToolbar
-                right={
-                    <>
-                        <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => setStartOpen(true)}>
-                            开启录制
-                        </Button>
-                        <RefreshButton onClick={loadList} loading={loading} />
-                    </>
-                }
-            />
-
             {listError && (
                 <div style={{ marginBottom: 16 }}>
                     <ErrorState error={listError} title="加载录制列表失败" onRetry={loadList} />
                 </div>
             )}
 
-            <Table
-                rowKey={(r) => r.recordingCode}
+            {/* 列表页走基座 ListTable（lead 008 §2 规则 2/3/4）：分页 / 过滤 / EmptyState 三件套。
+                动作按钮（开启录制 / 刷新）按 §2 放 cardExtra；
+                分页用基座默认的 DEFAULT_PAGINATION（原来手写的
+                {pageSize:10, showSizeChanger:false} 缺 pageSizeOptions / showTotal），
+                过滤按录制编码 / 名称 / 目标服务端侧过滤。
+                列筛选（状态）与排序仍由 antd Table 自己处理，onChange 原样透传。 */}
+            <ListTable
+                cardTitle={title || undefined}
+                rows={filtered}
                 columns={columns}
-                dataSource={filtered}
+                rowKey={(r) => r.recordingCode}
                 loading={loading}
                 onChange={(_, filters) => setStatusFilter(filters?.recordStatus?.[0] ?? null)}
-                pagination={{ pageSize: 10, showSizeChanger: false, hideOnSinglePage: true }}
-                locale={{ emptyText: <EmptyState title="暂无录制会话" description="点「开启录制」开始" /> }}
+                searchKeys="recordingCode,recordingName,targetUrl"
+                searchPlaceholder="按录制编码 / 名称 / 目标服务过滤"
+                emptyTitle="暂无录制会话"
+                emptyDescription="点「开启录制」开始"
                 onRow={(row) => ({ onClick: () => openDetail(row), style: { cursor: 'pointer' } })}
+                cardExtra={
+                    <Space>
+                        <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => setStartOpen(true)}>
+                            开启录制
+                        </Button>
+                        <RefreshButton onClick={loadList} loading={loading} />
+                    </Space>
+                }
             />
 
             <Drawer
@@ -466,14 +469,17 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
                                                 />
                                             </div>
                                         )}
-                                        <Table
-                                            rowKey={(r) => r.id ?? r.sequence}
-                                            size="small"
+                                        {/* 请求列表同样走基座 ListTable（§2 三件套）；
+                                            expandable（展开看 Body）由基座原样透传给 antd Table。 */}
+                                        <ListTable
+                                            rows={requests}
                                             columns={requestColumns}
-                                            dataSource={requests}
+                                            rowKey={(r) => r.id ?? r.sequence}
                                             loading={requestsLoading}
-                                            pagination={{ pageSize: 15, showSizeChanger: false, hideOnSinglePage: true }}
-                                            locale={{ emptyText: <EmptyState title="尚无请求" description={`把流量发到 /api/mock/${active.recordingCode}/... 即会被采集`} /> }}
+                                            searchKeys="requestUrl,requestMethod,responseStatus"
+                                            searchPlaceholder="按 URL / 方法 / 响应码过滤"
+                                            emptyTitle="尚无请求"
+                                            emptyDescription={`把流量发到 /api/mock/${active.recordingCode}/... 即会被采集`}
                                             expandable={{
                                                 expandedRowRender: (r) => (
                                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

@@ -3,7 +3,7 @@ import {
     Table, Tag, Button, Space, Modal, Input, Form, message, Drawer, Popconfirm, Alert, Tooltip, Typography, Descriptions, Badge,
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { EmptyState, ErrorState, RefreshButton, TableToolbar } from '@yuku123/z-frontend-common/ui';
+import { EmptyState, ErrorState, ListTable, RefreshButton } from '@yuku123/z-frontend-common/ui';
 
 // Mock 场景状态机面板。
 // request 契约与 SPA 一致：request('mock-platform/...')，路径相对 /api/。
@@ -313,34 +313,36 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
 
     return (
         <div data-component="z-script-scenario">
-            {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
-
-            {/* 工具条走共享 TableToolbar：操作按钮统一放右侧（lead 008 全仓统一布局） */}
-            <TableToolbar
-                right={
-                    <>
-                        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                            新建场景
-                        </Button>
-                        <RefreshButton onClick={loadList} loading={loading} />
-                    </>
-                }
-            />
-
             {listError && (
                 <div style={{ marginBottom: 16 }}>
                     <ErrorState error={listError} title="加载场景列表失败" onRetry={loadList} />
                 </div>
             )}
 
-            <Table
-                rowKey={(r) => r.scenarioCode}
+            {/* 列表页走基座 ListTable（lead 008 §2 规则 2/3/4）：分页 / 过滤 / EmptyState 三件套。
+                动作按钮（新建场景 / 刷新）按 §2 放 cardExtra；
+                分页用基座默认的 DEFAULT_PAGINATION（原来手写的
+                {pageSize:10, showSizeChanger:false} 缺 pageSizeOptions / showTotal），
+                过滤按场景编码 / 名称 / 描述端侧过滤。 */}
+            <ListTable
+                cardTitle={title || undefined}
+                rows={scenarios}
                 columns={columns}
-                dataSource={scenarios}
+                rowKey={(r) => r.scenarioCode}
                 loading={loading}
-                pagination={{ pageSize: 10, showSizeChanger: false, hideOnSinglePage: true }}
-                locale={{ emptyText: <EmptyState title="暂无场景" description="点「新建场景」开始" /> }}
+                searchKeys="scenarioCode,scenarioName,description"
+                searchPlaceholder="按场景编码 / 名称 / 描述过滤"
+                emptyTitle="暂无场景"
+                emptyDescription="点「新建场景」开始"
                 onRow={(row) => ({ onClick: () => openDetail(row), style: { cursor: 'pointer' } })}
+                cardExtra={
+                    <Space>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+                            新建场景
+                        </Button>
+                        <RefreshButton onClick={loadList} loading={loading} />
+                    </Space>
+                }
             />
 
             <Modal

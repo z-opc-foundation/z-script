@@ -1,6 +1,6 @@
 import React from 'react';
-import { Table, Tag, Switch } from 'antd';
-import { EmptyState } from '@yuku123/z-frontend-common/ui';
+import { Tag, Switch } from 'antd';
+import { ListTable } from '@yuku123/z-frontend-common/ui';
 
 // Mock 端点列表：path + method + 匹配规则 + 响应模板摘要。
 // 规范 §5：接 props 不 fetch。
@@ -37,14 +37,19 @@ export default function MockEndpointListView({ endpoints = [], loading = false, 
 
     return (
         <div data-component="z-script-mock-endpoint-list">
-            {title && <h3 style={{ marginTop: 0 }}>{title}</h3>}
-            <Table
-                rowKey={(r) => r.mockCode || r.id}
+            {/* 列表页走基座 ListTable（lead 008 §2 规则 2/3/4）：分页 / 过滤 / EmptyState 三件套。
+                分页用基座默认的 DEFAULT_PAGINATION（原来手写的 {pageSize:10, showSizeChanger:false}
+                缺 pageSizeOptions / showTotal），过滤按 Mock 编码 / 名称 / Path 端侧过滤。 */}
+            <ListTable
+                cardTitle={title || undefined}
+                rows={endpoints}
                 columns={columns}
-                dataSource={endpoints}
+                rowKey={(r) => r.mockCode || r.id}
                 loading={loading}
-                pagination={{ pageSize: 10, showSizeChanger: false }}
-                locale={{ emptyText: <EmptyState title="暂无 Mock 端点" description="录制回放后可一键导入为 Mock 端点" /> }}
+                searchKeys="mockCode,mockName,path"
+                searchPlaceholder="按 Mock 编码 / 名称 / Path 过滤"
+                emptyTitle="暂无 Mock 端点"
+                emptyDescription="录制回放后可一键导入为 Mock 端点"
             />
         </div>
     );
