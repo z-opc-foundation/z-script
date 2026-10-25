@@ -530,7 +530,7 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
                                                     size="small"
                                                     columns={playResultColumns}
                                                     dataSource={playResult.results || []}
-                                                    pagination={false}
+                                                    pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showTotal: (t) => `共 ${t} 条` }}
                                                     scroll={{ y: 360 }}
                                                 />
                                             </>
@@ -564,7 +564,7 @@ export default function RecordingView({ request, title = '录制 / 回放' }) {
                                                     message={`共 ${cmpResult.total ?? 0} 个请求：${cmpResult.match ?? 0} 一致 / ${cmpResult.diff ?? 0} 不一致`}
                                                 />
                                                 {cmpResult.diffs?.length > 0 && (
-                                                    <Table rowKey={(r, i) => i} size="small" columns={diffColumns} dataSource={cmpResult.diffs} pagination={false} />
+                                                    <Table rowKey={(r, i) => i} size="small" columns={diffColumns} dataSource={cmpResult.diffs} pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showTotal: (t) => `共 ${t} 条` }} />
                                                 )}
                                             </>
                                         ) : (

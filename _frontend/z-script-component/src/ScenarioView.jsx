@@ -432,7 +432,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                             columns={instanceColumns}
                             dataSource={instanceRows}
                             loading={instancesLoading}
-                            pagination={false}
+                            pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showTotal: (t) => `共 ${t} 条` }}
                             locale={{ emptyText: <EmptyState title="暂无运行实例" description="触发一次带 X-Scenario-Instance 的 Mock 调用后出现" size="sm" /> }}
                         />
 
@@ -450,7 +450,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                             size="small"
                             columns={endpointColumns}
                             dataSource={endpoints}
-                            pagination={false}
+                            pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showTotal: (t) => `共 ${t} 条` }}
                             locale={{ emptyText: <EmptyState title="暂无关联端点" description="该场景还没有绑定 Mock 端点" size="sm" /> }}
                         />
 
@@ -461,7 +461,7 @@ export default function ScenarioView({ request, title = '场景 / 状态机' }) 
                             size="small"
                             columns={caseColumns}
                             dataSource={cases}
-                            pagination={false}
+                            pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10', '20', '50', '100'], showTotal: (t) => `共 ${t} 条` }}
                             locale={{ emptyText: <EmptyState title="暂无关联用例" description="该场景还没有关联用例" size="sm" /> }}
                         />
                     </>
