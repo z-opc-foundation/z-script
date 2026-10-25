@@ -25,7 +25,7 @@
     "react-router-dom": "^7.0.0"
   },
   "dependencies": {
-    "@yuku123/z-frontend-common": "^1.1.4"
+    "@yuku123/z-frontend-common": "^1.1.7"
   },
   "devDependencies": {
     "@ant-design/icons": "^6.1.0",
