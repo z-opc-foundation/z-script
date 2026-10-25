@@ -57,6 +57,11 @@ function ProtectedShell() {
             appTitle="z-script 控制台"
             appShort="z-script"
             appVersion="0.1.0"
+            appIcon={{
+                icon: <img src="/icon.png" alt="z-script 控制台" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />,
+                color: '#f59e0b',
+                label: 'z-script 控制台',
+            }}
             appUser={user}
         />
     )
