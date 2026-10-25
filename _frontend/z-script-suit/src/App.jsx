@@ -6,6 +6,8 @@ import LoginPage from './LoginPage'
 import { Result, Button } from 'antd'
 
 import { at, BASE } from './routes-base'
+// 版本号只认 package.json，避免顶栏版本与发版号两处各写一遍慢慢漂移。
+import { version as appVersion } from '../package.json'
 
 // vite base（/script/，与 Spring context-path 一致）作为 router basename
 const ROUTER_BASENAME = BASE || undefined
@@ -56,7 +58,7 @@ function ProtectedShell() {
             menuItems={menuItems}
             appTitle="z-script 控制台"
             appShort="z-script"
-            appVersion="0.1.0"
+            appVersion={appVersion}
             appIcon={{
                 icon: <img src="/icon.png" alt="z-script 控制台" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />,
                 color: '#f59e0b',
