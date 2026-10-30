@@ -28,7 +28,7 @@ public class InvokeLogController {
      *
      * <p><b>参数名</b>：{@code current} / {@code size} 是本仓分页接口的**统一口径**
      * （与 {@code /api/script/api-key/page} 一致）；{@code pageNo} / {@code pageSize} 作为
-     * **历史别名**保留 —— 仓内 e2e 脚本（{@code _doc/002_testing/FEATURE051/e2e.sh}）
+     * **历史别名**保留 —— z-opc 仓的验收脚本（{@code z-opc/_doc/002_testing/FEATURE051/e2e.sh}）
      * 与旧版前端用的就是这两个名字，直接删会打断它们。
      * 优先级：{@code current/size} 优先，缺省时才回落到别名。
      *
