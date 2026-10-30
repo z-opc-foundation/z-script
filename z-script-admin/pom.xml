@@ -24,10 +24,11 @@
     <artifactId>z-script-admin</artifactId>
     <packaging>jar</packaging>
 
-    <name>z-script :: admin (Standalone Console App, NOT published to Central)</name>
+    <name>z-script :: admin</name>
     <description>
         Z-Script 独立可启动应用：脚本平台 + Mock 平台 + Web 控制台。
         留 reactor 统一构建，不上 Maven Central。
+        Standalone Console App, NOT published to Central
     </description>
 
     <properties>

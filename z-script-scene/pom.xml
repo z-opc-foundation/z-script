@@ -20,8 +20,8 @@
     <artifactId>z-script-scene</artifactId>
     <packaging>pom</packaging>
 
-    <name>z-script :: scene (aggregator)</name>
-    <description>z-script 场景化组装层聚合 pom</description>
+    <name>z-script :: scene</name>
+    <description>z-script 场景化组装层聚合 pom / aggregator</description>
 
     <modules>
         <module>z-script-scene-http</module>

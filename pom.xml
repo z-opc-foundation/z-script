@@ -22,11 +22,12 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
 
-    <name>z-script (Script Platform + Mock Server)</name>
+    <name>z-script :: root</name>
     <description>
         Z-Script: DSL 脚本平台 (Groovy / JS / Lua / EL / SQL 沙箱执行 + 版本化 + 标签 + 配额 + 调用审计)
         与 Mock 平台 (接口 Mock / 录制回放 / 场景编排 / 故障注入 / HTTP 多步链路),
         脚本可一键暴露为 HTTP 接口与 MCP Tool。
+        Script Platform + Mock Server
     </description>
 
     <url>https://github.com/z-opc-foundation/z-script</url>
