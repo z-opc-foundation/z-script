@@ -1,11 +1,12 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import {safeEmptyOutDir} from '../../build-tools/safe-vite-plugin.mjs'
 
 // 组件层 = library mode：产出 ES module + d.ts，供应用层与跨仓（z-opc 等）消费。
 // react / react-dom / antd 走 peerDependencies，必须 external，否则组件层体积膨胀且多实例冲突。
 export default defineConfig({
-    plugins: [react()],
+    plugins: [safeEmptyOutDir(), react()],
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'src'),
@@ -33,7 +34,7 @@ export default defineConfig({
                        '@yuku123/z-frontend-common/ui/echarts'],
         },
         outDir: 'dist',
-        emptyOutDir: true,
+        emptyOutDir: false,
         sourcemap: false,
     },
 });

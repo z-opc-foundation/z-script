@@ -1,0 +1,2 @@
+com.zifang.z.script.web.config.ZScriptWebAutoConfiguration
+com.zifang.z.script.web.host.ScriptHostAutoConfiguration

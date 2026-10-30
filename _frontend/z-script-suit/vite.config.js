@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import {safeEmptyOutDir} from '../../build-tools/safe-vite-plugin.mjs'
 
 // Z-Script 控制台应用层。
 //
@@ -12,7 +13,7 @@ import path from 'path';
 // 阶段复制到 target/classes/static/，随 exec.jar 一起发布（Mode 1 合体部署）。
 export default defineConfig({
     base: '/script/',
-    plugins: [react()],
+    plugins: [safeEmptyOutDir(), react()],
     resolve: {
     dedupe: ['react', 'react-dom', 'react-router-dom', 'antd', '@ant-design/icons', 'axios'],
         alias: { '@': path.resolve(__dirname, 'src'), ...(process.env.LOCAL_SIBLINGS === '1' ? { '@yuku123/z-script-component': '../z-script-component/src' } : {}) },
@@ -31,7 +32,7 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         assetsDir: 'assets',
-        emptyOutDir: true,
+        emptyOutDir: false,
         sourcemap: false,
     },
 });

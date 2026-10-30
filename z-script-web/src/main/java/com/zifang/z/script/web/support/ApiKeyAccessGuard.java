@@ -2,7 +2,7 @@ package com.zifang.z.script.web.support;
 
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * API Key 管理面的「角色 / 归属」判定 (TASK-20260925-031)。

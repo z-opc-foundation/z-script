@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -247,7 +247,7 @@ public class MockDispatchController {
     /**
      * 包装 Request 以重写路径，用于 MockEngine 内部按 mock 路径进行匹配。
      */
-    static class WrappedRequest extends javax.servlet.http.HttpServletRequestWrapper {
+    static class WrappedRequest extends jakarta.servlet.http.HttpServletRequestWrapper {
         private final String newPath;
 
         /**
