@@ -15,8 +15,8 @@
 |------|-----|
 | **仓库** | `z-script`（聚合 pom，`<packaging>pom</packaging>`） |
 | **Maven 坐标** | `io.github.yuku123:z-script:${revision}`；库件 `z-script-core` / `-engine` / `-web` / `-scene` / `-scene-http` |
-| **当前版本** | `1.0.2`（根 POM `<revision>`，CI-friendly versions + flatten-maven-plugin `flattenMode=oss`） |
-| **父项目** | `io.github.yuku123:z-boot-parent:1.2.2`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘）；父链自带第三方地板与兄弟仓权威表（其中 `z-script.version=1.0.2`、`z-util.version=1.0.14`） |
+| **当前版本** | `1.0.3`（根 POM `<revision>`，CI-friendly versions + flatten-maven-plugin `flattenMode=oss`） |
+| **父项目** | `io.github.yuku123:z-boot-parent:1.2.2`（`<relativePath/>` 留空，parent 在 repo1 不在磁盘）；父链自带第三方地板与兄弟仓权威表（其中 `z-script.version=1.0.3`、`z-util.version=1.0.14`） |
 | **Maven Central** | **已发布**：上述 6 个库坐标的 `1.0.0` 与 `1.0.1` 从 repo1 回读全部 200（`io.github.yuku123/<artifactId>/<version>/…-<version>.pom`）。唯一例外是应用包：`z-script-admin:1.0.0` = 200（历史漏发，`central-publishing` 插件不认 `maven.deploy.skip`），`1.0.1` = 404 —— 已在 `central` profile 用 `excludeArtifacts` 挡住 |
 | **默认端口** | `8086`（`SERVER_PORT` 可覆盖）· `server.servlet.context-path: /script` |
 | **运行口径** | Java 17（父链 `maven.compiler.source/target=17`，class major 61）· Spring Boot 3.3.13 |
@@ -86,7 +86,7 @@
 
 ```
 z-script/
-├── pom.xml                     # 聚合 POM：parent z-boot-parent:1.2.2，<revision>=1.0.2 统一版本
+├── pom.xml                     # 聚合 POM：parent z-boot-parent:1.2.2，<revision>=1.0.3 统一版本
 ├── z-script-core/              # 领域层：17 张表的实体 + MyBatis-Plus Mapper + Service（App/ApiKey/Script/Version/Tag/Quota/InvokeLog/Mock*）
 ├── z-script-engine/            # 引擎层：ScriptEngine + sandbox/{El,Groovy}Sandbox、MockEngine、Assertion、Recorder/Playback、FaultInjection、ScriptMcpAdapter
 ├── z-script-web/               # Starter 层：20 个 Controller + ApiKeyAuthInterceptor + 自动装配（spring.factories）
@@ -128,7 +128,7 @@ z-script/
 
 ```bash
 # 有 node 环境时由 frontend-maven-plugin 自己装 node，无需本机预装
-mvn -pl z-script-admin -am package              # 产物 z-script-admin/target/z-script-admin-1.0.2-exec.jar
+mvn -pl z-script-admin -am package              # 产物 z-script-admin/target/z-script-admin-1.0.3-exec.jar
 mvn -pl z-script-admin -am package -Dfrontend.skip=true   # 只发库/CI：跳过前端，jar 能出但 /script/ 404
 ```
 
@@ -145,7 +145,7 @@ mysql -h127.0.0.1 -P3306 -uroot z_script < _doc/002_deploy/init.sql   # 幂等�
 ### 起服务
 
 ```bash
-java -jar z-script-admin/target/z-script-admin-1.0.2-exec.jar \
+java -jar z-script-admin/target/z-script-admin-1.0.3-exec.jar \
     --z.base.db.script.host=127.0.0.1 --z.base.db.script.username=root
 # 控制台 http://localhost:8086/script/ · Knife4j /script/doc.html · /script/swagger-ui/index.html · /script/v3/api-docs
 ```
@@ -185,11 +185,11 @@ z:
 <dependency>
     <groupId>io.github.yuku123</groupId>
     <artifactId>z-script-web</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
 </dependency>
 ```
 
-版本交给 `z-boot-parent` 的兄弟仓权威表锁也可以（其 `z-script.version` 正是 `1.0.2`）。引入即自动装配：
+版本交给 `z-boot-parent` 的兄弟仓权威表锁也可以（其 `z-script.version` 正是 `1.0.3`）。引入即自动装配：
 `META-INF/spring.factories` → `ZScriptWebAutoConfiguration`（`@ComponentScan("com.zifang.z.script")` + 6 个引擎 Bean）；
 要用链路编排再单独引 `z-script-scene-http`（其 `SceneHttpAutoConfiguration` 的 `spring.factories` 键已在孵化时补齐）。
 z-boot 侧另有聚合 starter `z-boot-script-starter`（依赖 `z-script-web`），进程内跑整套脚本/Mock 能力，无需独立部署 admin。
