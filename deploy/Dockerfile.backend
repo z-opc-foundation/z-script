@@ -12,8 +12,7 @@
 #
 # 端口：8086（Spring Boot），context-path /script
 
-FROM eclipse-temurin:8-jre-jammy
-
+FROM eclipse-temurin:17-jre-jammy
 ARG JAR_FILE=z-script-admin/target/z-script-admin-1.0.0-exec.jar
 ENV JAVA_OPTS="-Xms512m -Xmx1g"
 ENV SERVER_PORT=8086
