@@ -14,6 +14,8 @@ import com.zifang.z.script.engine.sandbox.ElSandbox;
 import com.zifang.z.script.engine.sandbox.GroovySandbox;
 import com.zifang.z.script.engine.sandbox.SandboxExecutor;
 import com.zifang.z.script.engine.sandbox.SandboxPolicy;
+import com.zifang.z.script.engine.messaging.ScriptMessageBridge;
+import com.zifang.z.script.engine.messaging.ScriptMessageSender;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,6 +40,12 @@ import java.util.Map;
 public class ScriptEngine {
 
     private static final Logger log = LogManager.getLogger(ScriptEngine.class);
+
+    /**
+     * 发消息能力（宿主提供）。null = 这套脚本引擎所在的环境没有消息中心，
+     * 脚本里用 {@code msg} 会得到一句人话，而不是空指针。
+     */
+    private ScriptMessageSender messageSender;
 
     private final ElEvaluator elEvaluator;
     private final GroovyExecutor groovyExecutor;
@@ -74,6 +82,13 @@ public class ScriptEngine {
         this.sandboxExecutor = new SandboxExecutor(Math.max(2, Runtime.getRuntime().availableProcessors()));
         log.info("ScriptEngine initialized with EL, Groovy, Lua, SQL, MOCK engines (sandbox={}, timeout={}ms)",
                 sandboxEnabled, this.sandboxPolicy.getTimeoutMs());
+    }
+
+    /**
+     * 装上宿主提供的发消息能力（宿主在自动装配时调）。
+     */
+    public void setMessageSender(ScriptMessageSender messageSender) {
+        this.messageSender = messageSender;
     }
 
     /**
@@ -157,6 +172,9 @@ public class ScriptEngine {
         }
         bindings.put("params", params != null ? params : new HashMap<>());
         bindings.put("__json", new JsonHelper());
+        // 发消息能力：宿主提供（z-opc 用 z-msg-client 实现），脚本里写 msg.send(...)。
+        // 密钥在宿主侧，脚本正文里不出现任何凭据。
+        bindings.put("msg", new ScriptMessageBridge(messageSender));
         if (sandboxEnabled) {
             return sandboxExecutor.execute(
                     () -> groovySandbox.eval(sourceCode, bindings), sandboxPolicy.getTimeoutMs());
