@@ -1,8 +1,6 @@
 package com.zifang.z.script.web.config;
 
 import com.zifang.z.script.engine.*;
-import com.zifang.z.script.engine.messaging.ScriptMessageSender;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -12,14 +10,15 @@ import org.springframework.context.annotation.Configuration;
 public class ZScriptWebAutoConfiguration {
 
     /**
-     * 脚本引擎。宿主若提供 {@link ScriptMessageSender}（例如 z-opc 用 z-msg-client 实现），
-     * 就装进引擎 —— 脚本里于是有 {@code msg.send(...)}，而 AK 留在宿主侧。
+     * 脚本引擎。
+     * <p>
+     * 发消息能力（{@code msg.send(...)}）由 {@link ScriptMessageSenderWiringConfig} 的后置处理器装进来，
+     * 不在这里接 —— 一个 JVM 里可能有多处注册引擎（z-team 也注册同名 bean），
+     * 在某个创建点接线等于赌"哪个 bean 最后生效"。
      */
     @Bean
-    public ScriptEngine scriptEngine(ObjectProvider<ScriptMessageSender> messageSenderProvider) {
-        ScriptEngine engine = new ScriptEngine();
-        messageSenderProvider.ifAvailable(engine::setMessageSender);
-        return engine;
+    public ScriptEngine scriptEngine() {
+        return new ScriptEngine();
     }
 
     @Bean
