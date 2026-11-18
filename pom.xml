@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.github.yuku123</groupId>
         <artifactId>z-boot-parent</artifactId>
-        <version>1.2.3</version>
+        <version>1.2.4</version>
         <relativePath/>
     </parent>
 
@@ -289,7 +289,7 @@
                 <!-- 这条声明必须**常开**（不挂 central profile）：z-boot-parent 那条 flatten 是
                      <inherited>false</inherited>（z-boot-parent/pom.xml:261），不下发给消费仓，
                      而本仓对外形状是自包含 raw pom（repo1 回读 1.0.0 五份 <parent> 计数 0）⇒
-                     加了 <parent> 之后不自己 flatten，发出去的就是带着 z-boot-parent:1.0.19 的废 pom。
+                     加了 <parent> 之后不自己 flatten，发出去的就是带着 z-boot-parent:1.2.4 的废 pom。
                      版本键 1.7.3 已删，引用点由父链解析（同值）。 -->
                 <version>${flatten-maven-plugin.version}</version>
                 <configuration>
