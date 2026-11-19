@@ -2,6 +2,7 @@ package com.zifang.z.script.core.domain.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zifang.z.meta.api.annotation.BizMethod;
 import com.zifang.z.script.core.domain.entity.ScriptTagDO;
 import com.zifang.z.script.core.domain.entity.ScriptTagRelDO;
 import com.zifang.z.script.core.domain.mapper.ScriptTagMapper;
@@ -25,6 +26,7 @@ public class ScriptTagServiceImpl extends ServiceImpl<ScriptTagMapper, ScriptTag
     private ScriptTagRelMapper tagRelMapper;
 
     @Override
+    @BizMethod(name = "createTag", module = "z-script", description = "", operation = BizMethod.Operation.CREATE)
     public ScriptTagDO createTag(String tagName, String tagCategory, String tagColor) {
         ScriptTagDO tag = new ScriptTagDO();
         tag.setTagName(tagName);
@@ -36,11 +38,13 @@ public class ScriptTagServiceImpl extends ServiceImpl<ScriptTagMapper, ScriptTag
     }
 
     @Override
+    @BizMethod(name = "listAll", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public List<ScriptTagDO> listAll() {
         return list(new LambdaQueryWrapper<ScriptTagDO>().orderByAsc(ScriptTagDO::getId));
     }
 
     @Override
+    @BizMethod(name = "addTagToScript", module = "z-script", description = "", operation = BizMethod.Operation.CREATE)
     public void addTagToScript(Long scriptId, Long tagId) {
         // 防重复
         Long exist = tagRelMapper.selectCount(new LambdaQueryWrapper<ScriptTagRelDO>()
@@ -58,6 +62,7 @@ public class ScriptTagServiceImpl extends ServiceImpl<ScriptTagMapper, ScriptTag
     }
 
     @Override
+    @BizMethod(name = "removeTagFromScript", module = "z-script", description = "", operation = BizMethod.Operation.DELETE)
     public void removeTagFromScript(Long scriptId, Long tagId) {
         tagRelMapper.delete(new LambdaQueryWrapper<ScriptTagRelDO>()
                 .eq(ScriptTagRelDO::getScriptId, scriptId)
@@ -65,6 +70,7 @@ public class ScriptTagServiceImpl extends ServiceImpl<ScriptTagMapper, ScriptTag
     }
 
     @Override
+    @BizMethod(name = "listTagsOfScript", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public List<ScriptTagDO> listTagsOfScript(Long scriptId) {
         List<ScriptTagRelDO> rels = tagRelMapper.selectList(new LambdaQueryWrapper<ScriptTagRelDO>()
                 .eq(ScriptTagRelDO::getScriptId, scriptId));
@@ -76,6 +82,7 @@ public class ScriptTagServiceImpl extends ServiceImpl<ScriptTagMapper, ScriptTag
     }
 
     @Override
+    @BizMethod(name = "listScriptIdsByTag", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public List<Long> listScriptIdsByTag(Long tagId) {
         List<ScriptTagRelDO> rels = tagRelMapper.selectList(new LambdaQueryWrapper<ScriptTagRelDO>()
                 .eq(ScriptTagRelDO::getTagId, tagId));
@@ -86,6 +93,7 @@ public class ScriptTagServiceImpl extends ServiceImpl<ScriptTagMapper, ScriptTag
     }
 
     @Override
+    @BizMethod(name = "deleteTag", module = "z-script", description = "", operation = BizMethod.Operation.DELETE)
     public boolean deleteTag(Long tagId) {
         // 先删关联
         tagRelMapper.delete(new LambdaQueryWrapper<ScriptTagRelDO>()
@@ -93,3 +101,6 @@ public class ScriptTagServiceImpl extends ServiceImpl<ScriptTagMapper, ScriptTag
         return removeById(tagId);
     }
 }
+
+
+

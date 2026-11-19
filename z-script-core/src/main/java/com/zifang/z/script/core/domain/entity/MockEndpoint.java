@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizModel;
 
 import java.util.Date;
 
@@ -16,10 +18,12 @@ import java.util.Date;
  * @author zifang
  * @since 1.0.0
  */
+@BizModel(name = "Mock 端点配置实体", module = "z-script", description = "Mock 端点配置实体 (FEATURE051) 对应表: z_mock_endpoint 用途: 定义 Mock 端点的匹配规则和响应模板")
 @TableName("z_mock_endpoint")
 public class MockEndpoint {
 
     @TableId(type = IdType.AUTO)
+    @BizField(name = "主键 ID", type = BizField.FieldType.INTEGER)
     /**
      * 主键 ID
      */
@@ -28,155 +32,188 @@ public class MockEndpoint {
     /**
      * Mock 端点编码
      */
+    @BizField(name = "Mock 端点编码", type = BizField.FieldType.STRING)
     private String mockCode;
     /**
      * Mock 端点名称
      */
+    @BizField(name = "Mock 端点名称", type = BizField.FieldType.STRING)
     private String mockName;
     /**
      * 环境编码
      */
+    @BizField(name = "环境编码", type = BizField.FieldType.STRING)
     private String envCode;
     /**
      * 项目编码
      */
+    @BizField(name = "项目编码", type = BizField.FieldType.STRING)
     private String projectCode;
     /**
      * 模块编码
      */
+    @BizField(name = "模块编码", type = BizField.FieldType.STRING)
     private String moduleCode;
     /**
      * 请求路径
      */
+    @BizField(name = "请求路径", type = BizField.FieldType.STRING)
     private String path;
     /**
      * HTTP 方法 (GET/POST/PUT/DELETE 等)
      */
+    @BizField(name = "HTTP 方法 (GET/POST/PUT/DELETE 等)", type = BizField.FieldType.STRING)
     private String method;
 
     // Request matching
     /**
      * URL 匹配正则模式
      */
+    @BizField(name = "URL 匹配正则模式", type = BizField.FieldType.STRING)
     private String matchUrlPattern;
     /**
      * 请求头匹配规则 (JSON)
      */
+    @BizField(name = "请求头匹配规则 (JSON)", type = BizField.FieldType.STRING)
     private String matchHeaders;
     /**
      * 查询参数匹配规则 (JSON)
      */
+    @BizField(name = "查询参数匹配规则 (JSON)", type = BizField.FieldType.STRING)
     private String matchQuery;
     /**
      * 请求体匹配规则 (JSON)
      */
+    @BizField(name = "请求体匹配规则 (JSON)", type = BizField.FieldType.STRING)
     private String matchBody;
     /**
      * 请求体匹配类型 (JSON/TEXT/RAW)
      */
+    @BizField(name = "请求体匹配类型 (JSON/TEXT/RAW)", type = BizField.FieldType.STRING)
     private String matchBodyType;
 
     // Response
     /**
      * 响应模板 (支持变量替换)
      */
+    @BizField(name = "响应模板 (支持变量替换)", type = BizField.FieldType.STRING)
     private String responseTemplate;
     /**
      * 响应头配置 (JSON)
      */
+    @BizField(name = "响应头配置 (JSON)", type = BizField.FieldType.STRING)
     private String responseHeaders;
     /**
      * 响应延迟毫秒数
      */
+    @BizField(name = "响应延迟毫秒数", type = BizField.FieldType.INTEGER)
     private Integer delayMs;
     /**
      * HTTP 状态码
      */
+    @BizField(name = "HTTP 状态码", type = BizField.FieldType.INTEGER)
     private Integer statusCode;
 
     // Priority & Scenario
     /**
      * 优先级 (数值越大优先级越高)
      */
+    @BizField(name = "优先级 (数值越大优先级越高)", type = BizField.FieldType.INTEGER)
     private Integer priority;
     /**
      * 关联场景编码
      */
+    @BizField(name = "关联场景编码", type = BizField.FieldType.STRING)
     private String scenarioCode;
     /**
      * 进入此端点所需的前置状态
      */
+    @BizField(name = "进入此端点所需的前置状态", type = BizField.FieldType.STRING)
     private String requiredState;
     /**
      * 匹配成功后转换到的新状态
      */
+    @BizField(name = "匹配成功后转换到的新状态", type = BizField.FieldType.STRING)
     private String newState;
 
     // Fault injection
     /**
      * 故障注入类型 (RANDOM/CONSTANT/PERCENTAGE)
      */
+    @BizField(name = "故障注入类型 (RANDOM/CONSTANT/PERCENTAGE)", type = BizField.FieldType.STRING)
     private String faultType;
     /**
      * 故障注入配置 (JSON)
      */
+    @BizField(name = "故障注入配置 (JSON)", type = BizField.FieldType.STRING)
     private String faultConfig;
 
     // Proxy mode
     /**
      * 代理转发地址 (如非空则代理到该地址)
      */
+    @BizField(name = "代理转发地址 (如非空则代理到该地址)", type = BizField.FieldType.STRING)
     private String proxyTo;
 
     // Statistics
     /**
      * 命中次数
      */
+    @BizField(name = "命中次数", type = BizField.FieldType.INTEGER)
     private Long hitCount;
     /**
      * 验证次数
      */
+    @BizField(name = "验证次数", type = BizField.FieldType.INTEGER)
     private Long verifyCount;
     /**
      * 最后命中时间
      */
+    @BizField(name = "最后命中时间", type = BizField.FieldType.DATETIME)
     private Date lastHitTime;
 
     // Tags
     /**
      * 标签 (JSON 数组)
      */
+    @BizField(name = "标签 (JSON 数组)", type = BizField.FieldType.STRING)
     private String tags;
     /**
      * 描述信息
      */
+    @BizField(name = "描述信息", type = BizField.FieldType.STRING)
     private String description;
 
     // Links
     /**
      * 关联脚本编码
      */
+    @BizField(name = "关联脚本编码", type = BizField.FieldType.STRING)
     private String scriptCode;
     /**
      * 来源录制编码 (如果是从录制生成的)
      */
+    @BizField(name = "来源录制编码 (如果是从录制生成的)", type = BizField.FieldType.STRING)
     private String sourceRecording;
 
     // Status
     /**
      * 状态 (1=启用 0=禁用)
      */
+    @BizField(name = "0=禁用, 1=启用", type = BizField.FieldType.INTEGER)
     private Integer status;
     /**
      * 租户编码
      */
+    @BizField(name = "租户编码", type = BizField.FieldType.STRING)
     private String tenantCode;
     /**
      * 创建人 ID
      */
+    @BizField(name = "创建人 ID", type = BizField.FieldType.STRING)
     private String creatorId;
 
-    @TableLogic
+    @TableLogic @BizField(name = "逻辑删除: 0=正常, 1=已删", type = BizField.FieldType.INTEGER)
     /**
      * 逻辑删除标识
      */
@@ -184,10 +221,12 @@ public class MockEndpoint {
     /**
      * 创建时间
      */
+    @BizField(name = "创建时间", type = BizField.FieldType.DATETIME)
     private Date createTime;
     /**
      * 更新时间
      */
+    @BizField(name = "更新时间", type = BizField.FieldType.DATETIME)
     private Date updateTime;
 
     public Long getId() {
@@ -486,3 +525,6 @@ public class MockEndpoint {
         this.updateTime = v;
     }
 }
+
+
+

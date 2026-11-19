@@ -10,6 +10,9 @@ import com.zifang.util.http.parser.curl.CurlParser;
 import com.zifang.util.json.JsonUtil;
 import com.zifang.util.json.model.JsonArray;
 import com.zifang.util.json.model.JsonObject;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.Script;
 import com.zifang.z.script.core.domain.service.ScriptService;
 import com.zifang.z.script.engine.ApiBridgeDefinition;
@@ -18,10 +21,10 @@ import com.zifang.z.script.engine.ScriptEngine;
 import com.zifang.z.script.engine.ScriptMcpAdapter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Resource;
 import java.util.*;
 
 /**
@@ -69,9 +72,12 @@ public class ScriptController {
      */
     @Operation(summary = "脚本列表")
     @GetMapping("/list")
+    @BizApi(summary = "查询脚本列表。可选按 dslType 或 exposeAs 过滤", description = "查询脚本列表。可选按 dslType 或 exposeAs 过滤。", tags = { "z-script" })
     public Map<String, Object> list(
-            @RequestParam(required = false) String dslType,
-            @RequestParam(required = false) String exposeAs) {
+            @RequestParam(required = false)
+            @BizParam(name = "dslType", type = BizField.FieldType.STRING, description = "DSL 类型，可选", position = BizParam.Position.QUERY) String dslType,
+            @RequestParam(required = false)
+            @BizParam(name = "exposeAs", type = BizField.FieldType.STRING, description = "暴露方式，可选", position = BizParam.Position.QUERY) String exposeAs) {
         List<Script> scripts;
         if (dslType != null) {
             scripts = scriptService.listByDslType(dslType);
@@ -94,7 +100,8 @@ public class ScriptController {
      */
     @Operation(summary = "脚本详情")
     @GetMapping("/byCode")
-    public Map<String, Object> get(@RequestParam String scriptCode) {
+    @BizApi(summary = "按 scriptCode 查询脚本详情", description = "按 scriptCode 查询脚本详情。", tags = { "z-script" })
+    public Map<String, Object> get(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.QUERY) String scriptCode) {
         Script script = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (script != null) {
@@ -116,8 +123,10 @@ public class ScriptController {
      */
     @Operation(summary = "创建脚本")
     @PostMapping
-    public Map<String, Object> create(@RequestBody Script script,
-                                      @RequestHeader(value = "X-User-Id", required = false) String userId) {
+    @BizApi(summary = "创建脚本。根据 exposeAs 自动生成 httpPath 与 mcpToolName；creatorId 取自 X-User-Id Header", description = "创建脚本。根据 exposeAs 自动生成 httpPath 与 mcpToolName；creatorId 取自 X-User-Id Header。", tags = { "z-script" })
+    public Map<String, Object> create(@RequestBody @BizParam(name = "script", type = BizField.FieldType.STRING, description = "待创建脚本实体", position = BizParam.Position.BODY) Script script,
+                                      @RequestHeader(value = "X-User-Id", required = false)
+                                      @BizParam(name = "X-User-Id", type = BizField.FieldType.STRING, description = "创建者 ID（可选，来自 Header X-User-Id）", position = BizParam.Position.HEADER) String userId) {
         script.setCreatorId(userId);
         // Auto-generate HTTP path if expose_as includes HTTP.
         // 收敛到 /api/script-run/{code}（原本是 /run/{code}，与 /api/script-run 是同一件事的两扇门；
@@ -146,7 +155,8 @@ public class ScriptController {
      */
     @Operation(summary = "更新脚本")
     @PutMapping
-    public Map<String, Object> update(@RequestParam String scriptCode, @RequestBody Script script) {
+    @BizApi(summary = "按 scriptCode 更新脚本", description = "按 scriptCode 更新脚本。", tags = { "z-script" })
+    public Map<String, Object> update(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "目标脚本编码", position = BizParam.Position.QUERY) String scriptCode, @RequestBody @BizParam(name = "script", type = BizField.FieldType.STRING, description = "新脚本实体", position = BizParam.Position.BODY) Script script) {
         Script existing = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (existing == null) {
@@ -169,7 +179,8 @@ public class ScriptController {
      */
     @Operation(summary = "删除脚本")
     @DeleteMapping
-    public Map<String, Object> delete(@RequestParam String scriptCode) {
+    @BizApi(summary = "按 scriptCode 删除脚本", description = "按 scriptCode 删除脚本。", tags = { "z-script" })
+    public Map<String, Object> delete(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "目标脚本编码", position = BizParam.Position.QUERY) String scriptCode) {
         boolean ok = scriptService.deleteByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         result.put("success", ok);
@@ -186,8 +197,10 @@ public class ScriptController {
      */
     @Operation(summary = "执行脚本(Ad-hoc)")
     @PostMapping("/run")
-    public Map<String, Object> run(@RequestParam String scriptCode,
-                                   @RequestBody(required = false) Map<String, Object> params) {
+    @BizApi(summary = "Ad-hoc 执行脚本", description = "Ad-hoc 执行脚本。", tags = { "z-script" })
+    public Map<String, Object> run(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.QUERY) String scriptCode,
+                                   @RequestBody(required = false)
+                                   @BizParam(name = "params", type = BizField.FieldType.JSON, description = "执行参数，可选", position = BizParam.Position.BODY) Map<String, Object> params) {
         Script script = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (script == null) {
@@ -212,8 +225,10 @@ public class ScriptController {
      */
     @Operation(summary = "发布脚本(暴露为HTTP/MCP)")
     @PostMapping("/publish")
-    public Map<String, Object> publish(@RequestParam String scriptCode,
-                                       @RequestParam(defaultValue = "HTTP") String exposeAs) {
+    @BizApi(summary = "发布脚本，将其暴露为 HTTP、MCP 或 BOTH。exposeAs 包含 MCP 时会发布 ScriptPublishEvent 以注册 MCP tool", description = "发布脚本，将其暴露为 HTTP、MCP 或 BOTH。exposeAs 包含 MCP 时会发布 ScriptPublishEvent 以注册 MCP tool。", tags = { "z-script" })
+    public Map<String, Object> publish(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.QUERY) String scriptCode,
+                                       @RequestParam(defaultValue = "HTTP")
+                                       @BizParam(name = "exposeAs", type = BizField.FieldType.STRING, description = "暴露协议，HTTP/MCP/BOTH，默认 HTTP", position = BizParam.Position.QUERY) String exposeAs) {
         Script script = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (script == null) {
@@ -254,7 +269,8 @@ public class ScriptController {
      */
     @Operation(summary = "取消发布")
     @PostMapping("/unpublish")
-    public Map<String, Object> unpublish(@RequestParam String scriptCode) {
+    @BizApi(summary = "取消脚本发布：status 归 0（回到未上线），exposeAs 置为 NONE，清空 httpPath 与", description = "取消脚本发布：status 归 0（回到未上线），exposeAs 置为 NONE，清空 httpPath 与 mcpToolName，并发布 ScriptUnpublishEvent 以注销 MCP tool。 status 必须一起改：只有 #publish 会把它置 1，若这里不回滚，脚本就永远停在 「已上线」，既没有别的机会回到草稿态，控制台也无法再次上线（上线/下线按 status 判断）。", tags = { "z-script" })
+    public Map<String, Object> unpublish(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.QUERY) String scriptCode) {
         Script script = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (script == null) {
@@ -289,8 +305,10 @@ public class ScriptController {
      */
     @Operation(summary = "从 curl 导入并创建 API_BRIDGE 脚本")
     @PostMapping("/import-curl")
-    public Map<String, Object> importCurl(@RequestBody Map<String, Object> body,
-                                          @RequestHeader(value = "X-User-Id", required = false) String userId) {
+    @BizApi(summary = "从 curl 命令一键创建 API_BRIDGE 脚本", description = "从 curl 命令一键创建 API_BRIDGE 脚本。 入参: curl 原始 curl 字符串 (必填) scriptCode 脚本编码 (可选，未传则从 url 生成) scriptName 脚本名称 (可选) description 描述 (可选) inputParams 自定义输入参数 (可选，默认从 curl 中的 ${var} 推断) outputMapping 自定义输出映射 (可选，默认空数组 —— 用户后续在 UI 配)", tags = { "z-script" })
+    public Map<String, Object> importCurl(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, Object> body,
+                                          @RequestHeader(value = "X-User-Id", required = false)
+                                          @BizParam(name = "X-User-Id", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.HEADER) String userId) {
         String curl = (String) body.get("curl");
         if (curl == null || curl.trim().isEmpty()) {
             return error("curl 不能为空");
@@ -389,7 +407,8 @@ public class ScriptController {
      */
     @Operation(summary = "预览 curl + outputMapping 的执行结果")
     @PostMapping("/preview-mapping")
-    public Map<String, Object> previewMapping(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "试运行一次 curl + outputMapping，立刻看到抽取出的字段", description = "试运行一次 curl + outputMapping，立刻看到抽取出的字段。 不写库，仅用于前端预览。", tags = { "z-script" })
+    public Map<String, Object> previewMapping(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, Object> body) {
         String curl = (String) body.get("curl");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> outputMapping = (List<Map<String, Object>>) body.get("outputMapping");
@@ -456,8 +475,10 @@ public class ScriptController {
      */
     @Operation(summary = "从 OpenAPI spec 批量导入脚本")
     @PostMapping("/import-openapi")
-    public Map<String, Object> importOpenApi(@RequestBody Map<String, Object> body,
-                                             @RequestHeader(value = "X-User-Id", required = false) String userId) {
+    @BizApi(summary = "从 OpenAPI spec (JSON) 批量生成 API_BRIDGE 脚本", description = "从 OpenAPI spec (JSON) 批量生成 API_BRIDGE 脚本。 入参: openApiJson OpenAPI 文档 (JSON 字符串) prefix scriptCode 前缀 (默认 \"openapi_\")", tags = { "z-script" })
+    public Map<String, Object> importOpenApi(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, Object> body,
+                                             @RequestHeader(value = "X-User-Id", required = false)
+                                             @BizParam(name = "X-User-Id", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.HEADER) String userId) {
         String openApiJson = (String) body.get("openApiJson");
         String prefix = (String) body.getOrDefault("prefix", "openapi_");
         if (openApiJson == null || openApiJson.isEmpty()) {
@@ -577,7 +598,8 @@ public class ScriptController {
      */
     @Operation(summary = "复制脚本")
     @PostMapping("/copy")
-    public Map<String, Object> copy(@RequestParam String scriptCode) {
+    @BizApi(summary = "FEATURE051: 复制脚本", description = "FEATURE051: 复制脚本 复制一份脚本但生成新的 scriptCode (后缀 _copy_时间戳)", tags = { "z-script" })
+    public Map<String, Object> copy(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String scriptCode) {
         Script src = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (src == null) {
@@ -606,7 +628,8 @@ public class ScriptController {
      */
     @Operation(summary = "导出脚本(JSON)")
     @GetMapping("/export")
-    public Map<String, Object> export(@RequestParam String scriptCode) {
+    @BizApi(summary = "FEATURE051: 导出脚本 (JSON)", tags = { "z-script" })
+    public Map<String, Object> export(@RequestParam @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String scriptCode) {
         Script src = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (src == null) {
@@ -633,8 +656,10 @@ public class ScriptController {
      */
     @Operation(summary = "导入脚本(JSON)")
     @PostMapping("/import")
-    public Map<String, Object> importJson(@RequestBody Map<String, Object> body,
-                                          @RequestHeader(value = "X-User-Id", required = false) String userId) {
+    @BizApi(summary = "FEATURE051: 导入脚本 (JSON)", tags = { "z-script" })
+    public Map<String, Object> importJson(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, Object> body,
+                                          @RequestHeader(value = "X-User-Id", required = false)
+                                          @BizParam(name = "X-User-Id", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.HEADER) String userId) {
         Map<String, Object> result = new HashMap<>();
         try {
             String scriptCode = (String) body.get("scriptCode");
@@ -699,3 +724,6 @@ public class ScriptController {
         return r;
     }
 }
+
+
+

@@ -1,5 +1,8 @@
 package com.zifang.z.script.web.controller;
 
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockRecording;
 import com.zifang.z.script.engine.ApiExecutionResult;
 import com.zifang.z.script.engine.DynamicApiExecutor;
@@ -7,12 +10,12 @@ import com.zifang.z.script.engine.MockEngine;
 import com.zifang.z.script.engine.RecorderEngine;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -66,7 +69,8 @@ public class MockDispatchController {
      */
     @Operation(summary = "Mock请求统一入口")
     @RequestMapping(value = {"/{envCode}/**", "/**"})
-    public Object dispatch(@PathVariable(required = false) String envCode,
+    @BizApi(summary = "Mock 请求统一入口", description = "Mock 请求统一入口。 支持两种路径形态： GET /api/mock/{envCode/any/path} — 使用路径中的 envCode GET /api/mock/any/path — 通过 X-Mock-Env Header 或默认 default 该方法会剥离前缀并将重写后的路径传给 MockEngine 进行匹配。", tags = { "z-script" })
+    public Object dispatch(@PathVariable(required = false) @BizParam(name = "envCode", type = BizField.FieldType.STRING, description = "环境编码，可选（缺省时取 Header 或 default）", position = BizParam.Position.PATH) String envCode,
                            HttpServletRequest request) {
         // Get full path, strip the /api/mock prefix
         String fullPath = request.getRequestURI();
@@ -286,3 +290,6 @@ public class MockDispatchController {
         }
     }
 }
+
+
+

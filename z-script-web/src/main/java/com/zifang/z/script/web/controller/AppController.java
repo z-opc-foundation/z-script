@@ -2,15 +2,18 @@ package com.zifang.z.script.web.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zifang.util.core.meta.Result;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
 import com.zifang.z.script.core.domain.entity.AppDO;
 import com.zifang.z.script.core.domain.service.ApiKeyService;
 import com.zifang.z.script.core.domain.service.AppService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +36,15 @@ public class AppController {
 
     @Operation(summary = "应用列表")
     @GetMapping("/list")
+    @BizApi(summary = "list", description = "", tags = { "z-script" })
     public Result<List<AppDO>> list() {
         return Result.success(appService.list());
     }
 
     @Operation(summary = "创建应用")
     @PostMapping
-    public Result<AppDO> create(@RequestBody Map<String, String> body) {
+    @BizApi(summary = "create", description = "", tags = { "z-script" })
+    public Result<AppDO> create(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, String> body) {
         String appCode = body.get("appCode");
         if (appCode == null || appCode.trim().isEmpty()) {
             return Result.<AppDO>fail("appCode 必填").code(400);
@@ -58,7 +63,8 @@ public class AppController {
 
     @Operation(summary = "更新应用基础信息 / 启用禁用")
     @PutMapping
-    public Result<AppDO> update(@RequestParam String appCode, @RequestBody AppDO patch) {
+    @BizApi(summary = "update", description = "", tags = { "z-script" })
+    public Result<AppDO> update(@RequestParam @BizParam(name = "appCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String appCode, @RequestBody @BizParam(name = "patch", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.BODY) AppDO patch) {
         AppDO app = appService.getByAppCode(appCode);
         if (app == null) {
             return Result.<AppDO>fail("应用不存在: " + appCode).code(404);
@@ -82,7 +88,8 @@ public class AppController {
 
     @Operation(summary = "配置应用可访问的脚本列表 (scope=ALL 时忽略列表)")
     @PostMapping("/scripts")
-    public Result<AppDO> saveScripts(@RequestParam String appCode, @RequestBody Map<String, Object> body) {
+    @BizApi(summary = "saveScripts", description = "", tags = { "z-script" })
+    public Result<AppDO> saveScripts(@RequestParam @BizParam(name = "appCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String appCode, @RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, Object> body) {
         String scope = (String) body.getOrDefault("scope", "SPECIFIC");
         @SuppressWarnings("unchecked")
         List<String> scripts = (List<String>) body.get("scripts");
@@ -94,19 +101,22 @@ public class AppController {
 
     @Operation(summary = "启用应用（名下所有 Key 恢复可用）")
     @PostMapping("/{appCode}/enable")
-    public Result<Boolean> enable(@PathVariable String appCode) {
+    @BizApi(summary = "enable", description = "", tags = { "z-script" })
+    public Result<Boolean> enable(@PathVariable @BizParam(name = "appCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.PATH) String appCode) {
         return Result.success(setStatus(appCode, 1));
     }
 
     @Operation(summary = "禁用应用（名下所有 Key 一并 403）")
     @PostMapping("/{appCode}/disable")
-    public Result<Boolean> disable(@PathVariable String appCode) {
+    @BizApi(summary = "disable", description = "", tags = { "z-script" })
+    public Result<Boolean> disable(@PathVariable @BizParam(name = "appCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.PATH) String appCode) {
         return Result.success(setStatus(appCode, 0));
     }
 
     @Operation(summary = "删除应用（名下还有 Key 时拒绝）")
     @DeleteMapping
-    public Result<Boolean> delete(@RequestParam String appCode) {
+    @BizApi(summary = "delete", description = "", tags = { "z-script" })
+    public Result<Boolean> delete(@RequestParam @BizParam(name = "appCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String appCode) {
         AppDO app = appService.getByAppCode(appCode);
         if (app == null) {
             return Result.<Boolean>fail("应用不存在: " + appCode).code(404);
@@ -128,3 +138,6 @@ public class AppController {
         return appService.updateById(app);
     }
 }
+
+
+

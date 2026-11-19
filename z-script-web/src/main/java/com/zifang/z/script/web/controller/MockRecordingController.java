@@ -1,6 +1,9 @@
 package com.zifang.z.script.web.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockEndpoint;
 import com.zifang.z.script.core.domain.entity.MockRecording;
 import com.zifang.z.script.core.domain.mapper.MockEndpointMapper;
@@ -74,7 +77,8 @@ public class MockRecordingController {
      */
     @Operation(summary = "开启录制")
     @PostMapping("/start")
-    public Object startRecording(@RequestBody Map<String, String> body) {
+    @BizApi(summary = "开启录制", description = "开启录制 POST /api/mock-platform/recordings/start body: { recordingCode, recordingName, targetUrl }", tags = { "z-script" })
+    public Object startRecording(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, String> body) {
         String code = body.get("recordingCode");
         String name = body.get("recordingName");
         String target = body.get("targetUrl");
@@ -96,7 +100,8 @@ public class MockRecordingController {
      */
     @Operation(summary = "停止录制")
     @PostMapping("/stop")
-    public Object stopRecording(@RequestParam String recordingCode) {
+    @BizApi(summary = "停止录制", tags = { "z-script" })
+    public Object stopRecording(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode) {
         MockRecording rec = recorder.stopRecording(recordingCode);
         if (rec == null) {
             return mapOf("success", false, "message", "Recording not found");
@@ -114,7 +119,8 @@ public class MockRecordingController {
      */
     @Operation(summary = "录制会话列表")
     @GetMapping("/list")
-    public Object listRecordings(@RequestParam(required = false) String recordStatus) {
+    @BizApi(summary = "列出所有录制会话", tags = { "z-script" })
+    public Object listRecordings(@RequestParam(required = false) @BizParam(name = "recordStatus", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordStatus) {
         QueryWrapper<MockRecording> qw = new QueryWrapper<>();
         if (recordStatus != null && !recordStatus.isEmpty()) {
             qw.eq("record_status", recordStatus);
@@ -129,7 +135,8 @@ public class MockRecordingController {
      */
     @Operation(summary = "录制详情")
     @GetMapping("/byCode")
-    public Object getRecording(@RequestParam String recordingCode) {
+    @BizApi(summary = "获取录制详情", tags = { "z-script" })
+    public Object getRecording(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode) {
         return recorder.listRecordings().stream()
                 .filter(r -> recordingCode.equals(r.getRecordingCode()))
                 .findFirst().orElse(null);
@@ -140,7 +147,8 @@ public class MockRecordingController {
      */
     @Operation(summary = "录制请求列表")
     @GetMapping("/requests")
-    public Object getRecordingRequests(@RequestParam String recordingCode) {
+    @BizApi(summary = "获取录制中所有请求", tags = { "z-script" })
+    public Object getRecordingRequests(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode) {
         return recorder.getRecordingRequests(recordingCode);
     }
 
@@ -151,8 +159,10 @@ public class MockRecordingController {
      */
     @Operation(summary = "导出录制为Mock端点草稿")
     @PostMapping("/export")
-    public Object exportAsMock(@RequestParam String recordingCode,
-                               @RequestBody(required = false) Map<String, String> body) {
+    @BizApi(summary = "录制 → Mock endpoint 草稿 (不直接入库)", description = "录制 → Mock endpoint 草稿 (不直接入库) POST /api/mock-platform/recordings/{code}/export body: { projectCode? }", tags = { "z-script" })
+    public Object exportAsMock(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode,
+                               @RequestBody(required = false)
+                               @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, String> body) {
         String projectCode = body == null ? null : body.get("projectCode");
         List<MockEndpoint> drafts = recorder.exportAsMockEndpoints(recordingCode, projectCode);
         return mapOf(
@@ -168,8 +178,10 @@ public class MockRecordingController {
      */
     @Operation(summary = "导入录制为Mock端点")
     @PostMapping("/import")
-    public Object importAsMock(@RequestParam String recordingCode,
-                               @RequestBody(required = false) Map<String, String> body) {
+    @BizApi(summary = "把录制转换为 Mock 并入库", description = "把录制转换为 Mock 并入库 POST /api/mock-platform/recordings/{code}/import body: { envCode?, projectCode? }", tags = { "z-script" })
+    public Object importAsMock(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode,
+                               @RequestBody(required = false)
+                               @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, String> body) {
         String envCode = body == null ? null : body.get("envCode");
         String projectCode = body == null ? null : body.get("projectCode");
         return playback.playbackToMock(recordingCode, envCode, projectCode);
@@ -182,8 +194,9 @@ public class MockRecordingController {
      */
     @Operation(summary = "回放录制到目标服务")
     @PostMapping("/playback")
-    public Object playback(@RequestParam String recordingCode,
-                           @RequestBody Map<String, String> body) {
+    @BizApi(summary = "回放录制到目标服务（验证录制有效）", description = "回放录制到目标服务（验证录制有效） POST /api/mock-platform/recordings/{code}/playback body: { targetUrl }", tags = { "z-script" })
+    public Object playback(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode,
+                           @RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, String> body) {
         String target = body.get("targetUrl");
         if (target == null || target.isEmpty()) {
             return mapOf("success", false, "message", "targetUrl required");
@@ -196,8 +209,9 @@ public class MockRecordingController {
      */
     @Operation(summary = "回放并对比响应(基线对比)")
     @PostMapping("/compare")
-    public Object compare(@RequestParam String recordingCode,
-                          @RequestBody Map<String, String> body) {
+    @BizApi(summary = "回放并对比响应（基线对比）", tags = { "z-script" })
+    public Object compare(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode,
+                          @RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, String> body) {
         String target = body.get("targetUrl");
         if (target == null || target.isEmpty()) {
             return mapOf("success", false, "message", "targetUrl required");
@@ -210,7 +224,8 @@ public class MockRecordingController {
      */
     @Operation(summary = "删除录制及关联Mock端点")
     @DeleteMapping
-    public Object deleteRecording(@RequestParam String recordingCode) {
+    @BizApi(summary = "删除录制（级联删除请求详情）", tags = { "z-script" })
+    public Object deleteRecording(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode) {
         boolean ok = recorder.deleteRecording(recordingCode);
         // 同时清理关联的 Mock endpoints
         int removed = endpointMapper.delete(new QueryWrapper<MockEndpoint>().eq("source_recording", recordingCode));
@@ -225,7 +240,11 @@ public class MockRecordingController {
      */
     @Operation(summary = "查询录制关联的Mock端点")
     @GetMapping("/mocks")
-    public Object listMocksByRecording(@RequestParam String recordingCode) {
+    @BizApi(summary = "查询某录制关联的 Mock endpoints", tags = { "z-script" })
+    public Object listMocksByRecording(@RequestParam @BizParam(name = "recordingCode", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String recordingCode) {
         return endpointMapper.selectList(new QueryWrapper<MockEndpoint>().eq("source_recording", recordingCode));
     }
 }
+
+
+

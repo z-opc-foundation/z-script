@@ -1,6 +1,7 @@
 package com.zifang.z.script.core.domain.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.zifang.z.meta.api.annotation.BizMethod;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
 import com.zifang.z.script.core.domain.mapper.ApiKeyMapper;
 import com.zifang.z.script.core.domain.service.RetryPolicyService;
@@ -35,6 +36,7 @@ public class RetryPolicyServiceImpl implements RetryPolicyService {
     private ApiKeyMapper apiKeyMapper;
 
     @Override
+    @BizMethod(name = "shouldRetry", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean shouldRetry(ApiKeyDO apiKey, int httpStatus, String errorMessage) {
         if (apiKey == null) {
             return false;
@@ -66,6 +68,7 @@ public class RetryPolicyServiceImpl implements RetryPolicyService {
     }
 
     @Override
+    @BizMethod(name = "computeBackoffMs", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public long computeBackoffMs(ApiKeyDO apiKey, int retryNo) {
         if (apiKey == null || apiKey.getRetryBackoffMs() == null) return 1000;
 
@@ -76,6 +79,7 @@ public class RetryPolicyServiceImpl implements RetryPolicyService {
     }
 
     @Override
+    @BizMethod(name = "recordFailure", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public int recordFailure(Long apiKeyId) {
         AtomicInteger counter = failureCounter.computeIfAbsent(apiKeyId, k -> new AtomicInteger(0));
         int failures = counter.incrementAndGet();
@@ -84,11 +88,13 @@ public class RetryPolicyServiceImpl implements RetryPolicyService {
     }
 
     @Override
+    @BizMethod(name = "resetFailures", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public void resetFailures(Long apiKeyId) {
         failureCounter.computeIfAbsent(apiKeyId, k -> new AtomicInteger(0)).set(0);
     }
 
     @Override
+    @BizMethod(name = "isCircuitOpen", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean isCircuitOpen(Long apiKeyId) {
         ApiKeyDO apiKey = apiKeyMapper.selectById(apiKeyId);
         if (apiKey == null) {
@@ -105,6 +111,7 @@ public class RetryPolicyServiceImpl implements RetryPolicyService {
     }
 
     @Override
+    @BizMethod(name = "updatePolicy", module = "z-script", description = "", operation = BizMethod.Operation.UPDATE)
     public void updatePolicy(Long apiKeyId, Integer maxRetry, Integer backoffMs, String retryOn, Integer breakerThreshold) {
         ApiKeyDO apiKey = apiKeyMapper.selectById(apiKeyId);
         if (apiKey == null) {
@@ -121,3 +128,6 @@ public class RetryPolicyServiceImpl implements RetryPolicyService {
                 apiKeyId, maxRetry, backoffMs, retryOn, breakerThreshold);
     }
 }
+
+
+

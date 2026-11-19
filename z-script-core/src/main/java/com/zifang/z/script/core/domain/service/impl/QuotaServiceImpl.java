@@ -3,6 +3,7 @@ package com.zifang.z.script.core.domain.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zifang.z.meta.api.annotation.BizMethod;
 import com.zifang.z.script.core.domain.entity.QuotaDO;
 import com.zifang.z.script.core.domain.mapper.QuotaMapper;
 import com.zifang.z.script.core.domain.service.QuotaService;
@@ -31,6 +32,7 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
     private static final SimpleDateFormat MINUTE_FMT = new SimpleDateFormat("yyyyMMddHHmm");
 
     @Override
+    @BizMethod(name = "getByApiKeyId", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public QuotaDO getByApiKeyId(Long apiKeyId) {
         return getOne(new LambdaQueryWrapper<QuotaDO>()
                 .eq(QuotaDO::getApiKeyId, apiKeyId)
@@ -38,6 +40,7 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
     }
 
     @Override
+    @BizMethod(name = "initForApiKey", module = "z-script", description = "", operation = BizMethod.Operation.CREATE)
     public QuotaDO initForApiKey(Long apiKeyId) {
         QuotaDO existing = getByApiKeyId(apiKeyId);
         if (existing != null) {
@@ -61,6 +64,7 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
     }
 
     @Override
+    @BizMethod(name = "tryAcquire", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public Long tryAcquire(Long apiKeyId) {
         QuotaDO quota = getByApiKeyId(apiKeyId);
         if (quota == null) {
@@ -115,6 +119,7 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
     }
 
     @Override
+    @BizMethod(name = "shouldAlert", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean shouldAlert(QuotaDO quota) {
         if (quota == null || quota.getMaxPerDay() == null || quota.getMaxPerDay() == 0) return false;
 
@@ -128,6 +133,7 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
     }
 
     @Override
+    @BizMethod(name = "markAlerted", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public void markAlerted(Long quotaId) {
         update(new LambdaUpdateWrapper<QuotaDO>()
                 .eq(QuotaDO::getId, quotaId)
@@ -135,6 +141,7 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
     }
 
     @Override
+    @BizMethod(name = "updateQuota", module = "z-script", description = "", operation = BizMethod.Operation.UPDATE)
     public boolean updateQuota(Long id, Long maxPerDay, Long maxPerMinute, Integer maxConcurrent, Integer alertThreshold) {
         return update(new LambdaUpdateWrapper<QuotaDO>()
                 .eq(QuotaDO::getId, id)
@@ -146,6 +153,7 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
     }
 
     @Override
+    @BizMethod(name = "resetDaily", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean resetDaily(Long apiKeyId) {
         return update(new LambdaUpdateWrapper<QuotaDO>()
                 .eq(QuotaDO::getApiKeyId, apiKeyId)
@@ -168,3 +176,6 @@ public class QuotaServiceImpl extends ServiceImpl<QuotaMapper, QuotaDO> implemen
         return (midnight.getTimeInMillis() - now.getTimeInMillis()) / 1000;
     }
 }
+
+
+

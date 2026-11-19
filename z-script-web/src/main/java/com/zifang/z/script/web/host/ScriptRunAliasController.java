@@ -1,6 +1,7 @@
 package com.zifang.z.script.web.host;
 
 import com.zifang.util.core.meta.Result;
+import com.zifang.z.meta.api.annotation.BizApi;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +23,9 @@ import java.util.Map;
 public class ScriptRunAliasController {
 
     @GetMapping("/api/script-run/list")
+    @BizApi(summary = "scriptRunHistory", description = "", tags = { "z-script" })
     public Result<List<Map<String, Object>>> scriptRunHistory() {
         return Result.success(new ArrayList<>());
     }
 }
+

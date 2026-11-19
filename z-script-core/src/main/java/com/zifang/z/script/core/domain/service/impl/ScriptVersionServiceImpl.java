@@ -3,6 +3,7 @@ package com.zifang.z.script.core.domain.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zifang.z.meta.api.annotation.BizMethod;
 import com.zifang.z.script.core.domain.entity.ScriptVersionDO;
 import com.zifang.z.script.core.domain.mapper.ScriptVersionMapper;
 import com.zifang.z.script.core.domain.service.ScriptVersionService;
@@ -24,6 +25,7 @@ public class ScriptVersionServiceImpl extends ServiceImpl<ScriptVersionMapper, S
     private static final Random RANDOM = new Random();
 
     @Override
+    @BizMethod(name = "publishVersion", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public ScriptVersionDO publishVersion(Long scriptId, String scriptCode, String versionNo,
                                           String dslType, String dslContent, String outputMapping,
                                           String changeLog) {
@@ -60,6 +62,7 @@ public class ScriptVersionServiceImpl extends ServiceImpl<ScriptVersionMapper, S
     }
 
     @Override
+    @BizMethod(name = "listByScriptId", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public List<ScriptVersionDO> listByScriptId(Long scriptId) {
         return list(new LambdaQueryWrapper<ScriptVersionDO>()
                 .eq(ScriptVersionDO::getScriptId, scriptId)
@@ -67,6 +70,7 @@ public class ScriptVersionServiceImpl extends ServiceImpl<ScriptVersionMapper, S
     }
 
     @Override
+    @BizMethod(name = "selectVersion", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public ScriptVersionDO selectVersion(Long scriptId) {
         // 1. 找到当前生产版本 (is_current=1)
         ScriptVersionDO prod = getOne(new LambdaQueryWrapper<ScriptVersionDO>()
@@ -91,6 +95,7 @@ public class ScriptVersionServiceImpl extends ServiceImpl<ScriptVersionMapper, S
     }
 
     @Override
+    @BizMethod(name = "setCanary", module = "z-script", description = "", operation = BizMethod.Operation.UPDATE)
     public boolean setCanary(Long versionId, Integer canaryWeight) {
         if (canaryWeight < 0) {
             canaryWeight = 0;
@@ -126,6 +131,7 @@ public class ScriptVersionServiceImpl extends ServiceImpl<ScriptVersionMapper, S
     }
 
     @Override
+    @BizMethod(name = "promoteToProd", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean promoteToProd(Long versionId) {
         ScriptVersionDO v = getById(versionId);
         if (v == null) {
@@ -148,6 +154,7 @@ public class ScriptVersionServiceImpl extends ServiceImpl<ScriptVersionMapper, S
     }
 
     @Override
+    @BizMethod(name = "offline", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean offline(Long versionId) {
         return update(new LambdaUpdateWrapper<ScriptVersionDO>()
                 .set(ScriptVersionDO::getStatus, "DEPRECATED")
@@ -175,3 +182,6 @@ public class ScriptVersionServiceImpl extends ServiceImpl<ScriptVersionMapper, S
         }
     }
 }
+
+
+

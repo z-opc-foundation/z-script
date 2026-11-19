@@ -1,5 +1,8 @@
 package com.zifang.z.script.web.controller;
 
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.web.job.InvokeLogCleanupJob;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +24,8 @@ public class InvokeLogCleanController {
      * 手动触发清理, days=0 用默认配置
      */
     @PostMapping("/run")
-    public Map<String, Object> runClean(@RequestParam(defaultValue = "0") int days) {
+    @BizApi(summary = "手动触发清理, days=0 用默认配置", tags = { "z-script" })
+    public Map<String, Object> runClean(@RequestParam(defaultValue = "0") @BizParam(name = "days", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.QUERY) int days) {
         long start = System.currentTimeMillis();
         int deleted = cleanupJob.manualClean(days);
         long cost = System.currentTimeMillis() - start;
@@ -38,6 +42,7 @@ public class InvokeLogCleanController {
      * 查看清理配置
      */
     @GetMapping("/config")
+    @BizApi(summary = "查看清理配置", tags = { "z-script" })
     public Map<String, Object> config() {
         Map<String, Object> result = new HashMap<>();
         result.put("retentionDays", cleanupJob.getRetentionDays());
@@ -46,3 +51,6 @@ public class InvokeLogCleanController {
         return result;
     }
 }
+
+
+

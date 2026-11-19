@@ -3,6 +3,7 @@ package com.zifang.z.script.core.domain.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zifang.util.json.JsonUtil;
+import com.zifang.z.meta.api.annotation.BizMethod;
 import com.zifang.z.script.core.domain.entity.AppDO;
 import com.zifang.z.script.core.domain.mapper.AppMapper;
 import com.zifang.z.script.core.domain.service.AppService;
@@ -22,6 +23,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, AppDO> implements App
     private static final Logger log = LogManager.getLogger(AppServiceImpl.class);
 
     @Override
+    @BizMethod(name = "getByAppCode", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public AppDO getByAppCode(String appCode) {
         if (appCode == null || appCode.isEmpty()) {
             return null;
@@ -32,6 +34,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, AppDO> implements App
     }
 
     @Override
+    @BizMethod(name = "findOrCreate", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public AppDO findOrCreate(String appCode, String ownerId, String scope) {
         AppDO existing = getByAppCode(appCode);
         if (existing != null) {
@@ -55,6 +58,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, AppDO> implements App
     }
 
     @Override
+    @BizMethod(name = "verifyScope", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean verifyScope(AppDO app, String scriptCode) {
         String scope = app.getScope();
         if (scope == null || "ALL".equals(scope)) {
@@ -86,6 +90,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, AppDO> implements App
     }
 
     @Override
+    @BizMethod(name = "saveScripts", module = "z-script", description = "", operation = BizMethod.Operation.CREATE)
     public boolean saveScripts(String appCode, String scope, List<String> scripts) {
         AppDO app = getByAppCode(appCode);
         if (app == null) {
@@ -102,7 +107,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, AppDO> implements App
     }
 
     @Override
+    @BizMethod(name = "listEnabled", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public List<AppDO> listEnabled() {
         return list(new LambdaQueryWrapper<AppDO>().eq(AppDO::getStatus, 1));
     }
 }
+
+
+

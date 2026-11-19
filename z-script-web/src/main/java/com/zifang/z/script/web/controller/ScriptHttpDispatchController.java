@@ -1,14 +1,17 @@
 package com.zifang.z.script.web.controller;
 
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.Script;
 import com.zifang.z.script.core.domain.service.ScriptService;
 import com.zifang.z.script.engine.ExecutionResult;
 import com.zifang.z.script.engine.ScriptEngine;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,10 +52,13 @@ public class ScriptHttpDispatchController {
      */
     @Operation(summary = "调用已发布为 HTTP 的脚本")
     @RequestMapping("/{scriptCode}/**")
-    public Map<String, Object> run(@PathVariable String scriptCode,
-                                   @RequestParam(required = false) Map<String, Object> queryParams,
-                                   @RequestHeader Map<String, String> headers,
-                                   @RequestBody(required = false) Map<String, Object> bodyParams) {
+    @BizApi(summary = "调用已发布为 HTTP 的脚本。queryParams 与 bodyParams 合并为执行参数（body 优先）", description = "调用已发布为 HTTP 的脚本。queryParams 与 bodyParams 合并为执行参数（body 优先）。", tags = { "z-script" })
+    public Map<String, Object> run(@PathVariable @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.PATH) String scriptCode,
+                                   @RequestParam(required = false)
+                                   @BizParam(name = "queryParams", type = BizField.FieldType.JSON, description = "URL 查询参数", position = BizParam.Position.QUERY) Map<String, Object> queryParams,
+                                   @RequestHeader @BizParam(name = "headers", type = BizField.FieldType.JSON, description = "请求头", position = BizParam.Position.HEADER) Map<String, String> headers,
+                                   @RequestBody(required = false)
+                                   @BizParam(name = "bodyParams", type = BizField.FieldType.JSON, description = "请求体参数（与 queryParams 合并）", position = BizParam.Position.BODY) Map<String, Object> bodyParams) {
         Script script = scriptService.getByScriptCode(scriptCode);
         Map<String, Object> result = new HashMap<>();
         if (script == null) {
@@ -94,8 +100,10 @@ public class ScriptHttpDispatchController {
      */
     @Operation(summary = "简化版: 直接 POST 参数调用")
     @PostMapping("/{scriptCode}")
-    public Map<String, Object> runPost(@PathVariable String scriptCode,
-                                       @RequestBody(required = false) Map<String, Object> params) {
+    @BizApi(summary = "简化版：直接以 POST Body 作为参数调用已发布为 HTTP 的脚本", description = "简化版：直接以 POST Body 作为参数调用已发布为 HTTP 的脚本。", tags = { "z-script" })
+    public Map<String, Object> runPost(@PathVariable @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.PATH) String scriptCode,
+                                       @RequestBody(required = false)
+                                       @BizParam(name = "params", type = BizField.FieldType.JSON, description = "POST Body 参数", position = BizParam.Position.BODY) Map<String, Object> params) {
         return run(scriptCode, params, new HashMap<>(), params);
     }
 
@@ -108,8 +116,13 @@ public class ScriptHttpDispatchController {
      */
     @Operation(summary = "GET 形式调用 (参数走 query string)")
     @GetMapping("/{scriptCode}")
-    public Map<String, Object> runGet(@PathVariable String scriptCode,
-                                      @RequestParam(required = false) Map<String, Object> params) {
+    @BizApi(summary = "简化版：GET 形式调用已发布为 HTTP 的脚本，参数走 query string", description = "简化版：GET 形式调用已发布为 HTTP 的脚本，参数走 query string。", tags = { "z-script" })
+    public Map<String, Object> runGet(@PathVariable @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.PATH) String scriptCode,
+                                      @RequestParam(required = false)
+                                      @BizParam(name = "params", type = BizField.FieldType.JSON, description = "URL 查询参数", position = BizParam.Position.QUERY) Map<String, Object> params) {
         return run(scriptCode, params, new HashMap<>(), null);
     }
 }
+
+
+

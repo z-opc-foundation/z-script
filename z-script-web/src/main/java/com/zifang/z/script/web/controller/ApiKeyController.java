@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zifang.util.core.meta.Result;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
 import com.zifang.z.script.core.domain.service.ApiKeyService;
 import com.zifang.z.script.core.domain.service.impl.ApiKeyServiceImpl;
@@ -14,10 +17,10 @@ import com.zifang.z.script.web.dto.PageResult;
 import com.zifang.z.script.web.support.ApiKeyAccessGuard;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.*;
-
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,11 +51,16 @@ public class ApiKeyController {
 
     @Operation(summary = "分页查询 API Key（脱敏 + 只出本应用的 Key）")
     @GetMapping("/page")
+    @BizApi(summary = "page", description = "", tags = { "z-script" })
     public Result<PageResult<ApiKeyManageVO>> page(
-            @RequestParam(defaultValue = "1") long current,
-            @RequestParam(defaultValue = "20") long size,
-            @RequestParam(required = false) String appName,
-            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1")
+            @BizParam(name = "current", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.QUERY) long current,
+            @RequestParam(defaultValue = "20")
+            @BizParam(name = "size", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.QUERY) long size,
+            @RequestParam(required = false)
+            @BizParam(name = "appName", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String appName,
+            @RequestParam(required = false)
+            @BizParam(name = "status", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.QUERY) Integer status,
             HttpServletRequest request) {
         ApiKeyDO caller = ApiKeyAccessGuard.callerOf(request);
         if (caller == null) {
@@ -98,6 +106,7 @@ public class ApiKeyController {
 
     @Operation(summary = "查询所有启用的 Key（脱敏 + 只出本应用的 Key）")
     @GetMapping("/list-enabled")
+    @BizApi(summary = "listEnabled", description = "", tags = { "z-script" })
     public Result<List<ApiKeyManageVO>> listEnabled(HttpServletRequest request) {
         ApiKeyDO caller = ApiKeyAccessGuard.callerOf(request);
         if (caller == null) {
@@ -117,7 +126,8 @@ public class ApiKeyController {
 
     @Operation(summary = "创建 API Key (返回明文 secret 仅 1 次, 必须立即保存)")
     @PostMapping
-    public Result<ApiKeyCreateResponse> create(@RequestBody java.util.Map<String, String> body) {
+    @BizApi(summary = "create", description = "", tags = { "z-script" })
+    public Result<ApiKeyCreateResponse> create(@RequestBody @BizParam(name = "body", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.BODY) java.util.Map<String, String> body) {
         // 这条是**引导端点**：ZScriptWebMvcConfig 把精确路径 /api/script/api-key 排除在 AK 鉴权之外
         // （建第一把 Key 时调用方手上还没有 Key）。读端点与写端点不在排除范围内，都走归属校验。
         // 残留面（引导端点免鉴权 ⇒ 谁都能建一把 Key）：见 TASK-20260925-031 的提案，未在本卡改动。
@@ -145,7 +155,8 @@ public class ApiKeyController {
 
     @Operation(summary = "重置 Secret（只能重置本应用的 Key）")
     @PostMapping("/{id}/reset-secret")
-    public Result<ApiKeyResetSecretResponse> resetSecret(@PathVariable Long id, HttpServletRequest request) {
+    @BizApi(summary = "resetSecret", description = "", tags = { "z-script" })
+    public Result<ApiKeyResetSecretResponse> resetSecret(@PathVariable @BizParam(name = "id", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long id, HttpServletRequest request) {
         ApiKeyDO caller = ApiKeyAccessGuard.callerOf(request);
         if (caller == null) {
             return Result.<ApiKeyResetSecretResponse>fail("NO_API_KEY_IDENTITY: 缺少 API Key 身份").code(401);
@@ -167,7 +178,8 @@ public class ApiKeyController {
 
     @Operation(summary = "启用（只能改本应用的 Key）")
     @PostMapping("/{id}/enable")
-    public Result<Boolean> enable(@PathVariable Long id, HttpServletRequest request) {
+    @BizApi(summary = "enable", description = "", tags = { "z-script" })
+    public Result<Boolean> enable(@PathVariable @BizParam(name = "id", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long id, HttpServletRequest request) {
         Result<Boolean> guard = guardWrite(id, request);
         if (guard != null) {
             return guard;
@@ -177,7 +189,8 @@ public class ApiKeyController {
 
     @Operation(summary = "禁用（只能改本应用的 Key）")
     @PostMapping("/{id}/disable")
-    public Result<Boolean> disable(@PathVariable Long id, HttpServletRequest request) {
+    @BizApi(summary = "disable", description = "", tags = { "z-script" })
+    public Result<Boolean> disable(@PathVariable @BizParam(name = "id", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long id, HttpServletRequest request) {
         Result<Boolean> guard = guardWrite(id, request);
         if (guard != null) {
             return guard;
@@ -187,7 +200,8 @@ public class ApiKeyController {
 
     @Operation(summary = "删除（只能删本应用的 Key）")
     @DeleteMapping("/{id}")
-    public Result<Boolean> delete(@PathVariable Long id, HttpServletRequest request) {
+    @BizApi(summary = "delete", description = "", tags = { "z-script" })
+    public Result<Boolean> delete(@PathVariable @BizParam(name = "id", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long id, HttpServletRequest request) {
         Result<Boolean> guard = guardWrite(id, request);
         if (guard != null) {
             return guard;
@@ -197,7 +211,8 @@ public class ApiKeyController {
 
     @Operation(summary = "详情（脱敏 + 只出本应用的 Key）")
     @GetMapping("/{id}")
-    public Result<ApiKeyManageVO> get(@PathVariable Long id, HttpServletRequest request) {
+    @BizApi(summary = "get", description = "", tags = { "z-script" })
+    public Result<ApiKeyManageVO> get(@PathVariable @BizParam(name = "id", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long id, HttpServletRequest request) {
         ApiKeyDO caller = ApiKeyAccessGuard.callerOf(request);
         if (caller == null) {
             return Result.<ApiKeyManageVO>fail("NO_API_KEY_IDENTITY: 缺少 API Key 身份").code(401);
@@ -234,3 +249,6 @@ public class ApiKeyController {
         return null;
     }
 }
+
+
+

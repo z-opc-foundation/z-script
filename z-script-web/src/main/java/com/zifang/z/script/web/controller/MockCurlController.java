@@ -10,6 +10,9 @@ import com.zifang.util.http.client.HttpExecutor;
 import com.zifang.util.http.parser.curl.CurlBuilder;
 import com.zifang.util.http.parser.curl.CurlParser;
 import com.zifang.util.json.JsonUtil;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockEndpoint;
 import com.zifang.z.script.core.domain.entity.MockTestCase;
 import com.zifang.z.script.core.domain.mapper.MockEndpointMapper;
@@ -77,7 +80,8 @@ public class MockCurlController {
      */
     @Operation(summary = "解析curl命令")
     @PostMapping("/parse")
-    public Object parse(@RequestBody Map<String, String> body) {
+    @BizApi(summary = "仅解析 curl 字符串，不执行、不入库", description = "仅解析 curl 字符串，不执行、不入库。", tags = { "z-script" })
+    public Object parse(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 key {@code curl}", position = BizParam.Position.BODY) Map<String, String> body) {
         String curl = body.get("curl");
         if (curl == null || curl.trim().isEmpty()) {
             return mapOf("success", false, "message", "curl is required");
@@ -102,7 +106,8 @@ public class MockCurlController {
      */
     @Operation(summary = "解析并执行curl")
     @PostMapping("/run")
-    public Object run(@RequestBody Map<String, String> body) {
+    @BizApi(summary = "解析 curl 后立即执行，适用于 ad-hoc 测试场景", description = "解析 curl 后立即执行，适用于 ad-hoc 测试场景。", tags = { "z-script" })
+    public Object run(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 key {@code curl}", position = BizParam.Position.BODY) Map<String, String> body) {
         String curl = body.get("curl");
         if (curl == null || curl.trim().isEmpty()) {
             return mapOf("success", false, "message", "curl is required");
@@ -131,7 +136,8 @@ public class MockCurlController {
      */
     @Operation(summary = "导入为测试用例")
     @PostMapping("/import-as-case")
-    public Object importAsCase(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "解析 curl 后将其入库为 MockTestCase", description = "解析 curl 后将其入库为 MockTestCase。", tags = { "z-script" })
+    public Object importAsCase(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 {@code curl}，可选 {@code caseName}、{@code caseGroup}、{@code envCode}", position = BizParam.Position.BODY) Map<String, Object> body) {
         String curl = (String) body.get("curl");
         if (curl == null || curl.trim().isEmpty()) {
             return mapOf("success", false, "message", "curl is required");
@@ -175,7 +181,8 @@ public class MockCurlController {
      */
     @Operation(summary = "导入为Mock端点")
     @PostMapping("/import-as-endpoint")
-    public Object importAsEndpoint(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "解析 curl 后将其入库为 MockEndpoint", description = "解析 curl 后将其入库为 MockEndpoint。", tags = { "z-script" })
+    public Object importAsEndpoint(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 {@code curl}，可选 {@code mockName}、{@code envCode}、{@code projectCode}、{@code responseTemplate}", position = BizParam.Position.BODY) Map<String, Object> body) {
         String curl = (String) body.get("curl");
         if (curl == null || curl.trim().isEmpty()) {
             return mapOf("success", false, "message", "curl is required");
@@ -223,7 +230,8 @@ public class MockCurlController {
      */
     @Operation(summary = "导出测试用例为curl")
     @PostMapping("/export")
-    public Object export(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "将已存在的 MockTestCase 反向生成为 curl 命令字符串", description = "将已存在的 MockTestCase 反向生成为 curl 命令字符串。", tags = { "z-script" })
+    public Object export(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 {@code caseCode}", position = BizParam.Position.BODY) Map<String, Object> body) {
         String caseCode = (String) body.get("caseCode");
         if (caseCode == null) {
             return mapOf("success", false, "message", "caseCode required");
@@ -374,3 +382,6 @@ public class MockCurlController {
         return url.startsWith("/") ? url : "/" + url;
     }
 }
+
+
+

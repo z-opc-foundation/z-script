@@ -1,5 +1,8 @@
 package com.zifang.z.script.web.controller;
 
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.service.impl.RetryPolicyServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,11 +27,16 @@ public class RetryPolicyController {
     private RetryPolicyServiceImpl retryPolicyService;
 
     @PostMapping("/policy/{apiKeyId}")
-    public Map<String, Object> updatePolicy(@PathVariable Long apiKeyId,
-                                            @RequestParam(required = false, defaultValue = "0") Integer maxRetry,
-                                            @RequestParam(required = false, defaultValue = "1000") Integer backoffMs,
-                                            @RequestParam(required = false, defaultValue = "HTTP_5XX") String retryOn,
-                                            @RequestParam(required = false, defaultValue = "0") Integer breakerThreshold) {
+    @BizApi(summary = "updatePolicy", description = "", tags = { "z-script" })
+    public Map<String, Object> updatePolicy(@PathVariable @BizParam(name = "apiKeyId", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long apiKeyId,
+                                            @RequestParam(required = false, defaultValue = "0")
+                                            @BizParam(name = "maxRetry", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.QUERY) Integer maxRetry,
+                                            @RequestParam(required = false, defaultValue = "1000")
+                                            @BizParam(name = "backoffMs", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.QUERY) Integer backoffMs,
+                                            @RequestParam(required = false, defaultValue = "HTTP_5XX")
+                                            @BizParam(name = "retryOn", type = BizField.FieldType.STRING, description = "", position = BizParam.Position.QUERY) String retryOn,
+                                            @RequestParam(required = false, defaultValue = "0")
+                                            @BizParam(name = "breakerThreshold", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.QUERY) Integer breakerThreshold) {
         retryPolicyService.updatePolicy(apiKeyId, maxRetry, backoffMs, retryOn, breakerThreshold);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -41,7 +49,8 @@ public class RetryPolicyController {
     }
 
     @GetMapping("/policy/{apiKeyId}")
-    public Map<String, Object> getPolicy(@PathVariable Long apiKeyId) {
+    @BizApi(summary = "getPolicy", description = "", tags = { "z-script" })
+    public Map<String, Object> getPolicy(@PathVariable @BizParam(name = "apiKeyId", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long apiKeyId) {
         // 这里从 ApiKeyService 取 maxRetry 等 (简化返回)
         Map<String, Object> result = new HashMap<>();
         result.put("apiKeyId", apiKeyId);
@@ -50,7 +59,8 @@ public class RetryPolicyController {
     }
 
     @GetMapping("/circuit/{apiKeyId}")
-    public Map<String, Object> circuitStatus(@PathVariable Long apiKeyId) {
+    @BizApi(summary = "circuitStatus", description = "", tags = { "z-script" })
+    public Map<String, Object> circuitStatus(@PathVariable @BizParam(name = "apiKeyId", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long apiKeyId) {
         Map<String, Object> result = new HashMap<>();
         result.put("apiKeyId", apiKeyId);
         result.put("circuitOpen", retryPolicyService.isCircuitOpen(apiKeyId));
@@ -58,7 +68,8 @@ public class RetryPolicyController {
     }
 
     @PostMapping("/circuit/{apiKeyId}/reset")
-    public Map<String, Object> resetCircuit(@PathVariable Long apiKeyId) {
+    @BizApi(summary = "resetCircuit", description = "", tags = { "z-script" })
+    public Map<String, Object> resetCircuit(@PathVariable @BizParam(name = "apiKeyId", type = BizField.FieldType.INTEGER, description = "", position = BizParam.Position.PATH) Long apiKeyId) {
         retryPolicyService.resetFailures(apiKeyId);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -66,3 +77,6 @@ public class RetryPolicyController {
         return result;
     }
 }
+
+
+

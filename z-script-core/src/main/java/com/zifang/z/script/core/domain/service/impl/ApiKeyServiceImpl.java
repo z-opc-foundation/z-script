@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zifang.util.core.lang.RandomUtil;
 import com.zifang.util.json.JsonUtil;
+import com.zifang.z.meta.api.annotation.BizMethod;
 import com.zifang.z.script.core.domain.entity.ApiKeyDO;
 import com.zifang.z.script.core.domain.entity.AppDO;
 import com.zifang.z.script.core.domain.mapper.ApiKeyMapper;
@@ -17,12 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Date;
 import java.util.List;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * z-script API Key 服务实现 (FEATURE051)
@@ -139,6 +140,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "getByApiKey", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public ApiKeyDO getByApiKey(String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) {
             return null;
@@ -154,6 +156,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
      * @return 新创建的 ApiKeyDO (含明文 secretHash); 返回明文 secret 由 Controller 层读取 apiSecretHash 字段反解不出, 所以 Controller 应单独处理
      */
     @Override
+    @BizMethod(name = "创建 API Key", module = "z-script", description = "创建 API Key", operation = BizMethod.Operation.CREATE)
     public ApiKeyDO createApiKey(String appName, String ownerId, String scope, String description) {
         // 0. Key 挂在应用上：应用不存在就随签 Key 引导建出来（appName 即 appCode）。
         //    能调什么由应用的 scope/allowed_scripts 决定，Key 自身这两列只作老数据兼容保留。
@@ -203,6 +206,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "resetSecret", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public String resetSecret(Long id) {
         ApiKeyDO entity = getById(id);
         if (entity == null) {
@@ -222,6 +226,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "verifySignature", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean verifySignature(ApiKeyDO apiKey, String method, String path, String timestamp, String body, String signature) {
         // 1. 时间戳校验
         if (timestamp == null || signature == null) {
@@ -260,6 +265,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     // ========== 工具方法 ==========
 
     @Override
+    @BizMethod(name = "verifyIpWhitelist", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean verifyIpWhitelist(ApiKeyDO apiKey, String remoteIp) {
         String whitelist = apiKey.getIpWhitelist();
         if (whitelist == null || whitelist.isEmpty() || "[]".equals(whitelist.trim())) {
@@ -294,6 +300,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "verifyScope", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean verifyScope(ApiKeyDO apiKey, String scriptCode) {
         String scope = apiKey.getScope();
         if (scope == null || "ALL".equals(scope)) {
@@ -326,6 +333,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "recordCall", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public void recordCall(Long id) {
         // 简单实现: 同步 +1 (高频场景建议改成定时批量更新)
         ApiKeyDO entity = getById(id);
@@ -337,6 +345,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "listEnabled", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public List<ApiKeyDO> listEnabled() {
         return list(new LambdaQueryWrapper<ApiKeyDO>()
                 .eq(ApiKeyDO::getStatus, 1)
@@ -344,6 +353,7 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "disable", module = "z-script", description = "", operation = BizMethod.Operation.DELETE)
     public boolean disable(Long id) {
         return update(new LambdaUpdateWrapper<ApiKeyDO>()
                 .eq(ApiKeyDO::getId, id)
@@ -351,9 +361,13 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyDO> imple
     }
 
     @Override
+    @BizMethod(name = "enable", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public boolean enable(Long id) {
         return update(new LambdaUpdateWrapper<ApiKeyDO>()
                 .eq(ApiKeyDO::getId, id)
                 .set(ApiKeyDO::getStatus, 1));
     }
 }
+
+
+

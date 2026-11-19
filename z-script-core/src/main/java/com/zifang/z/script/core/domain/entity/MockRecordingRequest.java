@@ -3,6 +3,8 @@ package com.zifang.z.script.core.domain.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizModel;
 
 import java.util.Date;
 
@@ -13,22 +15,36 @@ import java.util.Date;
  * 2. 转换为 Mock 端点（一键导入录制数据为 Mock endpoint）
  * 3. 审计/调试
  */
+@BizModel(name = "录制的请求详情 - 存储录制会话中每一个请求的完整快照", module = "z-script", description = "录制的请求详情 - 存储录制会话中每一个请求的完整快照 用于： 1. PlaybackEngine 回放（按 sequence 顺序还原请求） 2. 转换为 Mock 端点（一键导入录制数据为 Mock endpoint） 3. 审计/调试")
 @TableName("z_mock_recording_request")
 public class MockRecordingRequest {
 
     @TableId(type = IdType.AUTO)
+    @BizField(name = "主键 ID", type = BizField.FieldType.INTEGER)
     private Long id;
+    @BizField(name = "录制编码", type = BizField.FieldType.STRING)
     private String recordingCode;
+    @BizField(name = "请求序号", type = BizField.FieldType.INTEGER)
     private Integer sequence;
+    @BizField(name = "请求方法", type = BizField.FieldType.STRING)
     private String requestMethod;
+    @BizField(name = "请求 URL", type = BizField.FieldType.STRING)
     private String requestUrl;
+    @BizField(name = "请求头 (JSON)", type = BizField.FieldType.STRING)
     private String requestHeaders;
+    @BizField(name = "请求体", type = BizField.FieldType.STRING)
     private String requestBody;
+    @BizField(name = "响应状态码", type = BizField.FieldType.INTEGER)
     private Integer responseStatus;
+    @BizField(name = "响应头 (JSON)", type = BizField.FieldType.STRING)
     private String responseHeaders;
+    @BizField(name = "响应体", type = BizField.FieldType.STRING)
     private String responseBody;
+    @BizField(name = "响应时间 (毫秒)", type = BizField.FieldType.INTEGER)
     private Long responseTime;
+    @BizField(name = "匹配到的 Mock 端点 (回放时)", type = BizField.FieldType.STRING)
     private String matchedEndpoint;
+    @BizField(name = "创建时间", type = BizField.FieldType.DATETIME)
     private Date createTime;
 
     public Long getId() {
@@ -135,3 +151,6 @@ public class MockRecordingRequest {
         this.createTime = v;
     }
 }
+
+
+

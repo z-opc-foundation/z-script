@@ -2,6 +2,9 @@ package com.zifang.z.script.scene.http.web;
 
 import com.zifang.util.core.lang.RandomUtil;
 import com.zifang.util.json.JsonUtil;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.scene.http.engine.ChainExecutionResult;
 import com.zifang.z.script.scene.http.engine.HttpChainContext;
 import com.zifang.z.script.scene.http.engine.HttpChainExecutor;
@@ -46,7 +49,8 @@ public class HttpChainController {
      * 响应：ChainExecutionResult (含 steps 全量溯源)
      */
     @PostMapping("/chain/execute")
-    public Map<String, Object> execute(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "同步执行链路", description = "同步执行链路。 请求体：{ chainId?, baseUrl?, mockEndpointResponses?:{ code: jsonString }, variables?:{...}, steps:[StepDefinition...] } 响应：ChainExecutionResult (含 steps 全量溯源)", tags = { "z-script" })
+    public Map<String, Object> execute(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, Object> body) {
         long start = System.currentTimeMillis();
         Map<String, Object> resp = new HashMap<>();
 
@@ -106,7 +110,8 @@ public class HttpChainController {
      * 方便前端调试。
      */
     @PostMapping("/chain/preview")
-    public Map<String, Object> preview(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "干跑模式：只解析/校验步骤，不真正发请求", description = "干跑模式：只解析/校验步骤，不真正发请求。 方便前端调试。", tags = { "z-script" })
+    public Map<String, Object> preview(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "", position = BizParam.Position.BODY) Map<String, Object> body) {
         Map<String, Object> resp = new HashMap<>();
         Object stepsRaw = body.get("steps");
         try {
@@ -124,6 +129,7 @@ public class HttpChainController {
     }
 
     @org.springframework.web.bind.annotation.GetMapping("/health")
+    @BizApi(summary = "health", description = "", tags = { "z-script" })
     public Map<String, Object> health() {
         Map<String, Object> resp = new HashMap<>();
         resp.put("code", 200);
@@ -133,3 +139,6 @@ public class HttpChainController {
         return resp;
     }
 }
+
+
+

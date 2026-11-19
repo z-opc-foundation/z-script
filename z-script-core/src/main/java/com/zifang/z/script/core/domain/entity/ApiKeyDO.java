@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizModel;
 
 import java.util.Date;
 
@@ -13,98 +15,120 @@ import java.util.Date;
  * 对应表: z_script_api_key
  * 用途: 调用方鉴权凭证, secret 仅存 SHA256 哈希不存明文
  */
+@BizModel(name = "z-script API Key 实体", module = "z-script", description = "z-script API Key 实体 (FEATURE051) 对应表: z_script_api_key 用途: 调用方鉴权凭证, secret 仅存 SHA256 哈希不存明文")
 @TableName("z_script_api_key")
 public class ApiKeyDO {
 
     @TableId(type = IdType.AUTO)
+    @BizField(name = "主键 ID", type = BizField.FieldType.INTEGER)
     private Long id;
 
     /**
      * API Key 标识 (zsk_live_xxx)
      */
+    @BizField(name = "API Key 标识 (zsk_live_xxx)", type = BizField.FieldType.STRING)
     private String apiKey;
 
     /**
      * 归属应用 id（权限模型的中心：能调什么由应用决定，Key 只负责认证）
      */
     @TableField("app_id")
+    @BizField(name = "归属应用 id（权限模型的中心：能调什么由应用决定，Key 只负责认证）", type = BizField.FieldType.INTEGER)
     private Long appId;
 
     /**
      * Secret 的 SHA256 哈希 (不存明文)
      */
+    @BizField(name = "Secret 的 SHA256 哈希 (不存明文)", type = BizField.FieldType.STRING)
     private String apiSecretHash;
 
     /**
      * 调用方应用名
      */
+    @BizField(name = "调用方应用名", type = BizField.FieldType.STRING)
     private String appName;
 
     /**
      * 创建人 ID
      */
+    @BizField(name = "创建人 ID", type = BizField.FieldType.STRING)
     private String ownerId;
 
     /**
      * 权限范围: ALL / READ_ONLY / SPECIFIC
      */
     @TableField("scope")
+    @BizField(name = "权限范围: ALL|READ_ONLY|SPECIFIC", type = BizField.FieldType.STRING)
     private String scope;
 
     /**
      * FEATURE051 - t17 重试配置
      */
     @TableField("max_retry")
+    @BizField(name = "FEATURE051 - t17 重试配置", type = BizField.FieldType.INTEGER)
     private Integer maxRetry;
 
     @TableField("retry_backoff_ms")
+    @BizField(name = "重试基础退避毫秒 (指数退避)", type = BizField.FieldType.INTEGER)
     private Integer retryBackoffMs;
 
     @TableField("retry_on")
+    @BizField(name = "重试条件: ALL|TIMEOUT|HTTP_5XX|NONE", type = BizField.FieldType.STRING)
     private String retryOn;
 
     @TableField("circuit_breaker_threshold")
+    @BizField(name = "熔断连续失败阈值 (0=不熔断)", type = BizField.FieldType.INTEGER)
     private Integer circuitBreakerThreshold;
 
     /**
      * SPECIFIC 模式下的 script_code 列表 (JSON)
      */
+    @BizField(name = "SPECIFIC 模式下的 script_code 列表 (JSON)", type = BizField.FieldType.STRING)
     private String allowedScripts;
 
     /**
      * IP 白名单 (JSON 数组, 支持 CIDR)
      */
+    @BizField(name = "IP 白名单 (JSON 数组, 支持 CIDR)", type = BizField.FieldType.STRING)
     private String ipWhitelist;
 
     /**
      * 1=启用 0=禁用
      */
+    @BizField(name = "1=启用 0=禁用", type = BizField.FieldType.INTEGER)
     private Integer status;
 
     /**
      * 过期时间 (NULL=永不过期)
      */
+    @BizField(name = "过期时间 (NULL=永不过期)", type = BizField.FieldType.DATETIME)
     private Date expireAt;
 
     /**
      * 最后一次调用时间
      */
+    @BizField(name = "最后一次调用时间", type = BizField.FieldType.DATETIME)
     private Date lastUsedAt;
 
     /**
      * 累计调用次数
      */
+    @BizField(name = "累计调用次数", type = BizField.FieldType.INTEGER)
     private Long totalCalls;
 
     /**
      * 备注
      */
+    @BizField(name = "备注", type = BizField.FieldType.STRING)
     private String description;
 
+    @BizField(name = "创建时间", type = BizField.FieldType.DATETIME)
     private Date createTime;
 
+    @BizField(name = "更新时间", type = BizField.FieldType.DATETIME)
     private Date updateTime;
 
+    @BizField(name = "租户编码", type = BizField.FieldType.STRING)
     private String tenantCode;
 
     // ========== Getter / Setter ==========
@@ -277,3 +301,6 @@ public class ApiKeyDO {
         this.tenantCode = tenantCode;
     }
 }
+
+
+

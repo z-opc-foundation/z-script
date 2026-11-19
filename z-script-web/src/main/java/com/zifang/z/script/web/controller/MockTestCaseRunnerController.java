@@ -2,6 +2,9 @@ package com.zifang.z.script.web.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.zifang.util.json.JsonUtil;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockTestCase;
 import com.zifang.z.script.core.domain.mapper.MockTestCaseMapper;
 import com.zifang.z.script.engine.ApiExecutionResult;
@@ -68,7 +71,8 @@ public class MockTestCaseRunnerController {
      */
     @Operation(summary = "执行单个测试用例")
     @PostMapping("/run")
-    public Object runCase(@RequestParam String caseCode) {
+    @BizApi(summary = "执行单个 MockTestCase", description = "执行单个 MockTestCase。", tags = { "z-script" })
+    public Object runCase(@RequestParam @BizParam(name = "caseCode", type = BizField.FieldType.STRING, description = "测试用例编码", position = BizParam.Position.QUERY) String caseCode) {
         MockTestCase testCase = testCaseMapper.selectOne(
                 new QueryWrapper<MockTestCase>().eq("case_code", caseCode));
         if (testCase == null) {
@@ -85,7 +89,8 @@ public class MockTestCaseRunnerController {
      */
     @PostMapping("/run-batch")
     @Operation(summary = "创建run-batch")
-    public Object runBatch(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "批量执行多个测试用例。请求体需包含 caseCodes 列表", description = "批量执行多个测试用例。请求体需包含 caseCodes 列表。", tags = { "z-script" })
+    public Object runBatch(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 key {@code caseCodes}", position = BizParam.Position.BODY) Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         List<String> caseCodes = (List<String>) body.get("caseCodes");
         if (caseCodes == null || caseCodes.isEmpty()) {
@@ -227,3 +232,6 @@ public class MockTestCaseRunnerController {
         }
     }
 }
+
+
+

@@ -1,6 +1,9 @@
 package com.zifang.z.script.web.controller;
 
 import com.zifang.util.core.lang.RandomUtil;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockEndpoint;
 import com.zifang.z.script.core.domain.mapper.MockEndpointMapper;
 import com.zifang.z.script.engine.ApiSpecParser;
@@ -66,7 +69,8 @@ public class MockOpenApiController {
      */
     @Operation(summary = "解析OpenAPI/Swagger/Postman内容")
     @PostMapping("/parse")
-    public Object parse(@RequestBody Map<String, String> body) {
+    @BizApi(summary = "仅解析 OpenAPI / Swagger / Postman 内容，不入库", description = "仅解析 OpenAPI / Swagger / Postman 内容，不入库。", tags = { "z-script" })
+    public Object parse(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 key {@code content}", position = BizParam.Position.BODY) Map<String, String> body) {
         String content = body.get("content");
         if (content == null || content.trim().isEmpty()) {
             return mapOf("success", false, "message", "content is required");
@@ -97,7 +101,8 @@ public class MockOpenApiController {
      */
     @Operation(summary = "批量导入为Mock端点")
     @PostMapping("/import-batch")
-    public Object importBatch(@RequestBody Map<String, Object> body) {
+    @BizApi(summary = "解析内容后批量入库为 MockEndpoint。可通过 selected 指定需要导入的端点子集", description = "解析内容后批量入库为 MockEndpoint。可通过 selected 指定需要导入的端点子集。", tags = { "z-script" })
+    public Object importBatch(@RequestBody @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体，包含 {@code content}；可选 {@code selected}、{@code envCode}、{@code projectCode}、{@code defaultResponse}、{@code defaultStatus}、{@code priority}、{@code tagPrefix}", position = BizParam.Position.BODY) Map<String, Object> body) {
         String content = (String) body.get("content");
         if (content == null || content.trim().isEmpty()) {
             return mapOf("success", false, "message", "content is required");
@@ -180,7 +185,8 @@ public class MockOpenApiController {
      */
     @Operation(summary = "获取示例文本")
     @GetMapping("/sample")
-    public Object sample(@RequestParam(defaultValue = "openapi3") String format) {
+    @BizApi(summary = "返回内置的 OpenAPI 3 / Swagger 2 / Postman 示例文本，用于前端编辑器或自测", description = "返回内置的 OpenAPI 3 / Swagger 2 / Postman 示例文本，用于前端编辑器或自测。", tags = { "z-script" })
+    public Object sample(@RequestParam(defaultValue = "openapi3") @BizParam(name = "format", type = BizField.FieldType.STRING, description = "指定示例格式：{@code openapi3}（默认）、{@code swagger2} 或 {@code postman}", position = BizParam.Position.QUERY) String format) {
         String openapi3 = "{\n" +
                 "  \"openapi\": \"3.0.1\",\n" +
                 "  \"info\": { \"title\": \"Sample API\", \"version\": \"1.0.0\" },\n" +
@@ -251,3 +257,6 @@ public class MockOpenApiController {
         }
     }
 }
+
+
+

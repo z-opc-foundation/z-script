@@ -1,13 +1,16 @@
 package com.zifang.z.script.web.controller;
 
 import com.zifang.util.core.lang.RandomUtil;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockEndpoint;
 import com.zifang.z.script.core.domain.service.MockEndpointService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +47,7 @@ public class MockEndpointController {
      */
     @Operation(summary = "Mock端点列表")
     @GetMapping("/list")
+    @BizApi(summary = "查询全部有效 Mock 端点", description = "查询全部有效 Mock 端点。", tags = { "z-script" })
     public Map<String, Object> list() {
         List<MockEndpoint> endpoints = mockEndpointService.listActive();
         Map<String, Object> result = new HashMap<>();
@@ -60,7 +64,8 @@ public class MockEndpointController {
      */
     @Operation(summary = "Mock端点详情")
     @GetMapping("/byCode")
-    public Map<String, Object> get(@RequestParam String mockCode) {
+    @BizApi(summary = "按 mockCode 查询 Mock 端点详情", description = "按 mockCode 查询 Mock 端点详情。", tags = { "z-script" })
+    public Map<String, Object> get(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "Mock 端点编码", position = BizParam.Position.QUERY) String mockCode) {
         MockEndpoint endpoint = mockEndpointService.getByMockCode(mockCode);
         Map<String, Object> result = new HashMap<>();
         if (endpoint != null) {
@@ -81,7 +86,8 @@ public class MockEndpointController {
      */
     @Operation(summary = "创建Mock端点")
     @PostMapping
-    public Map<String, Object> create(@RequestBody MockEndpoint endpoint) {
+    @BizApi(summary = "创建 Mock 端点。若未指定 mockCode，会自动生成", description = "创建 Mock 端点。若未指定 mockCode，会自动生成。", tags = { "z-script" })
+    public Map<String, Object> create(@RequestBody @BizParam(name = "endpoint", type = BizField.FieldType.STRING, description = "Mock 端点实体", position = BizParam.Position.BODY) MockEndpoint endpoint) {
         if (endpoint.getMockCode() == null || endpoint.getMockCode().isEmpty()) {
             endpoint.setMockCode("mock-" + RandomUtil.uuidShort(8));
         }
@@ -102,7 +108,8 @@ public class MockEndpointController {
      */
     @Operation(summary = "更新Mock端点")
     @PutMapping
-    public Map<String, Object> update(@RequestParam String mockCode, @RequestBody MockEndpoint endpoint) {
+    @BizApi(summary = "按 mockCode 更新 Mock 端点", description = "按 mockCode 更新 Mock 端点。", tags = { "z-script" })
+    public Map<String, Object> update(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "目标 Mock 端点编码", position = BizParam.Position.QUERY) String mockCode, @RequestBody @BizParam(name = "endpoint", type = BizField.FieldType.STRING, description = "待写入的 Mock 端点实体", position = BizParam.Position.BODY) MockEndpoint endpoint) {
         MockEndpoint existing = mockEndpointService.getByMockCode(mockCode);
         Map<String, Object> result = new HashMap<>();
         if (existing == null) {
@@ -124,7 +131,8 @@ public class MockEndpointController {
      */
     @Operation(summary = "删除Mock端点")
     @DeleteMapping
-    public Map<String, Object> delete(@RequestParam String mockCode) {
+    @BizApi(summary = "按 mockCode 删除 Mock 端点", description = "按 mockCode 删除 Mock 端点。", tags = { "z-script" })
+    public Map<String, Object> delete(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "目标 Mock 端点编码", position = BizParam.Position.QUERY) String mockCode) {
         boolean ok = mockEndpointService.deleteByMockCode(mockCode);
         Map<String, Object> result = new HashMap<>();
         result.put("success", ok);
@@ -140,7 +148,8 @@ public class MockEndpointController {
      */
     @Operation(summary = "启用/禁用Mock端点")
     @PostMapping("/toggle")
-    public Map<String, Object> toggle(@RequestParam String mockCode, @RequestParam Integer status) {
+    @BizApi(summary = "切换 Mock 端点的启用状态。status=1 启用，status=0 禁用", description = "切换 Mock 端点的启用状态。status=1 启用，status=0 禁用。", tags = { "z-script" })
+    public Map<String, Object> toggle(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "目标 Mock 端点编码", position = BizParam.Position.QUERY) String mockCode, @RequestParam @BizParam(name = "status", type = BizField.FieldType.INTEGER, description = "目标状态值", position = BizParam.Position.QUERY) Integer status) {
         MockEndpoint endpoint = mockEndpointService.getByMockCode(mockCode);
         Map<String, Object> result = new HashMap<>();
         if (endpoint == null) {
@@ -155,3 +164,6 @@ public class MockEndpointController {
         return result;
     }
 }
+
+
+

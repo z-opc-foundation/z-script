@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zifang.z.meta.api.annotation.BizMethod;
 import com.zifang.z.script.core.domain.entity.InvokeLogDO;
 import com.zifang.z.script.core.domain.mapper.InvokeLogMapper;
 import com.zifang.z.script.core.domain.service.InvokeLogService;
@@ -24,6 +25,7 @@ public class InvokeLogServiceImpl extends ServiceImpl<InvokeLogMapper, InvokeLog
     private static final Logger log = LogManager.getLogger(InvokeLogServiceImpl.class);
 
     @Override
+    @BizMethod(name = "recordAsync", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public void recordAsync(InvokeLogDO invokeLog) {
         // 单线程池异步落库, 不阻塞主调用
         Thread t = new Thread(() -> {
@@ -41,6 +43,7 @@ public class InvokeLogServiceImpl extends ServiceImpl<InvokeLogMapper, InvokeLog
     }
 
     @Override
+    @BizMethod(name = "recordSync", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public void recordSync(InvokeLogDO invokeLog) {
         if (invokeLog.getCreateTime() == null) {
             invokeLog.setCreateTime(new Date());
@@ -53,6 +56,7 @@ public class InvokeLogServiceImpl extends ServiceImpl<InvokeLogMapper, InvokeLog
     }
 
     @Override
+    @BizMethod(name = "queryByPage", module = "z-script", description = "", operation = BizMethod.Operation.QUERY)
     public IPage<InvokeLogDO> queryByPage(Long apiKeyId, String scriptCode, Integer success,
                                           int pageNo, int pageSize) {
         LambdaQueryWrapper<InvokeLogDO> wrapper = new LambdaQueryWrapper<>();
@@ -70,6 +74,7 @@ public class InvokeLogServiceImpl extends ServiceImpl<InvokeLogMapper, InvokeLog
     }
 
     @Override
+    @BizMethod(name = "sumRecentCalls", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public Long sumRecentCalls(Long apiKeyId, int days) {
         Date since = daysAgo(days);
         QueryWrapper<InvokeLogDO> wrapper = new QueryWrapper<>();
@@ -79,6 +84,7 @@ public class InvokeLogServiceImpl extends ServiceImpl<InvokeLogMapper, InvokeLog
     }
 
     @Override
+    @BizMethod(name = "failureRate", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public Double failureRate(Long apiKeyId, int days) {
         Date since = daysAgo(days);
         Long total = baseMapper.selectCount(new QueryWrapper<InvokeLogDO>()
@@ -96,6 +102,7 @@ public class InvokeLogServiceImpl extends ServiceImpl<InvokeLogMapper, InvokeLog
     }
 
     @Override
+    @BizMethod(name = "dailyTrend", module = "z-script", description = "", operation = BizMethod.Operation.ACTION)
     public java.util.List<java.util.Map<String, Object>> dailyTrend(Long apiKeyId, int days) {
         java.util.List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
@@ -158,3 +165,4 @@ public class InvokeLogServiceImpl extends ServiceImpl<InvokeLogMapper, InvokeLog
         return cal.getTime();
     }
 }
+

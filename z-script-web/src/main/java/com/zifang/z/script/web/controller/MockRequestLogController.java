@@ -1,6 +1,9 @@
 package com.zifang.z.script.web.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockRequestLog;
 import com.zifang.z.script.core.domain.mapper.MockRequestLogMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,10 +49,14 @@ public class MockRequestLogController {
      */
     @Operation(summary = "请求日志列表")
     @GetMapping("/list")
-    public Object list(@RequestParam(required = false) String path,
-                       @RequestParam(required = false) String mockCode,
-                       @RequestParam(required = false) Integer matched,
-                       @RequestParam(required = false, defaultValue = "50") Integer limit) {
+    @BizApi(summary = "查询最近的请求日志，支持按路径、mockCode、matched 过滤；limit 最大 500", description = "查询最近的请求日志，支持按路径、mockCode、matched 过滤；limit 最大 500。", tags = { "z-script" })
+    public Object list(@RequestParam(required = false) @BizParam(name = "path", type = BizField.FieldType.STRING, description = "路径模糊匹配，可选", position = BizParam.Position.QUERY) String path,
+                       @RequestParam(required = false)
+                       @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "端点编码精确匹配，可选", position = BizParam.Position.QUERY) String mockCode,
+                       @RequestParam(required = false)
+                       @BizParam(name = "matched", type = BizField.FieldType.INTEGER, description = "1=已匹配，0=未匹配，可选", position = BizParam.Position.QUERY) Integer matched,
+                       @RequestParam(required = false, defaultValue = "50")
+                       @BizParam(name = "limit", type = BizField.FieldType.INTEGER, description = "返回条数上限，默认 50", position = BizParam.Position.QUERY) Integer limit) {
         QueryWrapper<MockRequestLog> qw = new QueryWrapper<>();
         if (path != null && !path.isEmpty()) {
             qw.like("request_path", path);
@@ -76,8 +83,10 @@ public class MockRequestLogController {
      */
     @Operation(summary = "按路径查询请求日志")
     @GetMapping("/by-path")
-    public Object byPath(@RequestParam String path,
-                         @RequestParam(required = false, defaultValue = "20") Integer limit) {
+    @BizApi(summary = "按请求路径维度查询历史日志，limit 最大 200", description = "按请求路径维度查询历史日志，limit 最大 200。", tags = { "z-script" })
+    public Object byPath(@RequestParam @BizParam(name = "path", type = BizField.FieldType.STRING, description = "请求路径", position = BizParam.Position.QUERY) String path,
+                         @RequestParam(required = false, defaultValue = "20")
+                         @BizParam(name = "limit", type = BizField.FieldType.INTEGER, description = "返回条数上限，默认 20", position = BizParam.Position.QUERY) Integer limit) {
         return logMapper.selectByPath(path, Math.min(limit, 200));
     }
 
@@ -88,6 +97,7 @@ public class MockRequestLogController {
      */
     @Operation(summary = "请求日志统计概览")
     @GetMapping("/stats")
+    @BizApi(summary = "请求日志统计概览：总数、匹配数、未匹配数以及按 mockCode 的耗时分布（Top 20）", description = "请求日志统计概览：总数、匹配数、未匹配数以及按 mockCode 的耗时分布（Top 20）。", tags = { "z-script" })
     public Object stats() {
         Map<String, Object> s = new HashMap<>();
         s.put("total", logMapper.selectCount(null));
@@ -105,7 +115,8 @@ public class MockRequestLogController {
      */
     @Operation(summary = "清理过期请求日志")
     @DeleteMapping("/clear")
-    public Object clear(@RequestParam(required = false) Integer keepLast) {
+    @BizApi(summary = "清理过期日志，仅保留最近 N 条（按 id 降序）。keepLast 缺省 1000", description = "清理过期日志，仅保留最近 N 条（按 id 降序）。keepLast 缺省 1000。", tags = { "z-script" })
+    public Object clear(@RequestParam(required = false) @BizParam(name = "keepLast", type = BizField.FieldType.INTEGER, description = "保留的最近条数，可选，默认 1000", position = BizParam.Position.QUERY) Integer keepLast) {
         if (keepLast == null) {
             keepLast = 1000;
         }
@@ -127,3 +138,6 @@ public class MockRequestLogController {
         return r;
     }
 }
+
+
+

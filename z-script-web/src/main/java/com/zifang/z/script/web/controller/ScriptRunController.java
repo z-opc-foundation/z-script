@@ -1,16 +1,19 @@
 package com.zifang.z.script.web.controller;
 
 import com.zifang.util.core.meta.Result;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.Script;
 import com.zifang.z.script.core.domain.service.ScriptService;
 import com.zifang.z.script.engine.ExecutionResult;
 import com.zifang.z.script.engine.ScriptEngine;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.*;
-
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,8 +51,10 @@ public class ScriptRunController {
      */
     @Operation(summary = "执行已发布脚本")
     @RequestMapping(value = "/run/{scriptCode}", method = {RequestMethod.GET, RequestMethod.POST})
-    public Result<Object> runScript(@PathVariable String scriptCode,
-                                    @RequestBody(required = false) Map<String, Object> body,
+    @BizApi(summary = "执行已发布为 HTTP 的脚本。GET / POST 共用入口，将请求体与 query 参数合并作为执行参数", description = "执行已发布为 HTTP 的脚本。GET / POST 共用入口，将请求体与 query 参数合并作为执行参数。", tags = { "z-script" })
+    public Result<Object> runScript(@PathVariable @BizParam(name = "scriptCode", type = BizField.FieldType.STRING, description = "脚本编码", position = BizParam.Position.PATH) String scriptCode,
+                                    @RequestBody(required = false)
+                                    @BizParam(name = "body", type = BizField.FieldType.JSON, description = "请求体参数（可选）", position = BizParam.Position.BODY) Map<String, Object> body,
                                     HttpServletRequest request) {
         Script script = scriptService.getByScriptCode(scriptCode);
         if (script == null || !"HTTP".equals(script.getExposeAs()) && !"BOTH".equals(script.getExposeAs())) {
@@ -86,3 +91,6 @@ public class ScriptRunController {
         return map;
     }
 }
+
+
+

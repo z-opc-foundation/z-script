@@ -1,6 +1,9 @@
 package com.zifang.z.script.web.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.zifang.z.meta.api.annotation.BizApi;
+import com.zifang.z.meta.api.annotation.BizField;
+import com.zifang.z.meta.api.annotation.BizParam;
 import com.zifang.z.script.core.domain.entity.MockEndpoint;
 import com.zifang.z.script.core.domain.entity.MockEnvironment;
 import com.zifang.z.script.core.domain.entity.MockScenario;
@@ -81,9 +84,12 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询列表")
     @GetMapping("/endpoints/list")
-    public Object listEndpoints(@RequestParam(required = false) String envCode,
-                                @RequestParam(required = false) String scenarioCode,
-                                @RequestParam(required = false) String status) {
+    @BizApi(summary = "查询 Mock 端点列表，可按环境、场景、状态过滤", description = "查询 Mock 端点列表，可按环境、场景、状态过滤。", tags = { "z-script" })
+    public Object listEndpoints(@RequestParam(required = false) @BizParam(name = "envCode", type = BizField.FieldType.STRING, description = "环境编码，可选", position = BizParam.Position.QUERY) String envCode,
+                                @RequestParam(required = false)
+                                @BizParam(name = "scenarioCode", type = BizField.FieldType.STRING, description = "场景编码，可选", position = BizParam.Position.QUERY) String scenarioCode,
+                                @RequestParam(required = false)
+                                @BizParam(name = "status", type = BizField.FieldType.STRING, description = "状态值，可选", position = BizParam.Position.QUERY) String status) {
         QueryWrapper<MockEndpoint> qw = new QueryWrapper<>();
         if (envCode != null && !envCode.isEmpty()) {
             qw.eq("env_code", envCode);
@@ -109,7 +115,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询endpoints")
     @GetMapping("/endpoints/byCode")
-    public Object getEndpoint(@RequestParam String mockCode) {
+    @BizApi(summary = "按 mockCode 查询 Mock 端点详情", description = "按 mockCode 查询 Mock 端点详情。", tags = { "z-script" })
+    public Object getEndpoint(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "端点编码", position = BizParam.Position.QUERY) String mockCode) {
         return endpointMapper.selectOne(new QueryWrapper<MockEndpoint>().eq("mock_code", mockCode));
     }
 
@@ -121,7 +128,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "创建endpoints")
     @PostMapping("/endpoints")
-    public Object createEndpoint(@RequestBody MockEndpoint endpoint) {
+    @BizApi(summary = "创建 Mock 端点。对 status、priority、method 缺省值进行兜底", description = "创建 Mock 端点。对 status、priority、method 缺省值进行兜底。", tags = { "z-script" })
+    public Object createEndpoint(@RequestBody @BizParam(name = "endpoint", type = BizField.FieldType.STRING, description = "待创建的 Mock 端点实体", position = BizParam.Position.BODY) MockEndpoint endpoint) {
         endpoint.setId(null);
         if (endpoint.getStatus() == null) {
             endpoint.setStatus(1);
@@ -148,7 +156,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "更新endpoints")
     @PutMapping("/endpoints")
-    public Object updateEndpoint(@RequestParam String mockCode, @RequestBody MockEndpoint endpoint) {
+    @BizApi(summary = "按 mockCode 更新 Mock 端点", description = "按 mockCode 更新 Mock 端点。", tags = { "z-script" })
+    public Object updateEndpoint(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "目标 Mock 端点编码", position = BizParam.Position.QUERY) String mockCode, @RequestBody @BizParam(name = "endpoint", type = BizField.FieldType.STRING, description = "新的 Mock 端点内容", position = BizParam.Position.BODY) MockEndpoint endpoint) {
         MockEndpoint existing = endpointMapper.selectOne(new QueryWrapper<MockEndpoint>().eq("mock_code", mockCode));
         if (existing == null) {
             return mapOf("success", false, "message", "not found");
@@ -167,7 +176,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "删除endpoints")
     @DeleteMapping("/endpoints")
-    public Object deleteEndpoint(@RequestParam String mockCode) {
+    @BizApi(summary = "按 mockCode 删除 Mock 端点", description = "按 mockCode 删除 Mock 端点。", tags = { "z-script" })
+    public Object deleteEndpoint(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "目标 Mock 端点编码", position = BizParam.Position.QUERY) String mockCode) {
         MockEndpoint existing = endpointMapper.selectOne(new QueryWrapper<MockEndpoint>().eq("mock_code", mockCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -188,7 +198,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "切换启用状态")
     @PostMapping("/endpoints/toggle")
-    public Object toggleEndpoint(@RequestParam String mockCode, @RequestParam Integer status) {
+    @BizApi(summary = "按 mockCode 切换 Mock 端点的启用状态", description = "按 mockCode 切换 Mock 端点的启用状态。", tags = { "z-script" })
+    public Object toggleEndpoint(@RequestParam @BizParam(name = "mockCode", type = BizField.FieldType.STRING, description = "目标 Mock 端点编码", position = BizParam.Position.QUERY) String mockCode, @RequestParam @BizParam(name = "status", type = BizField.FieldType.INTEGER, description = "目标状态值", position = BizParam.Position.QUERY) Integer status) {
         MockEndpoint existing = endpointMapper.selectOne(new QueryWrapper<MockEndpoint>().eq("mock_code", mockCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -206,6 +217,7 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询列表")
     @GetMapping("/environments/list")
+    @BizApi(summary = "查询全部 Mock 环境列表，按 id 升序", description = "查询全部 Mock 环境列表，按 id 升序。", tags = { "z-script" })
     public Object listEnvironments() {
         return environmentMapper.selectList(new QueryWrapper<MockEnvironment>().orderByAsc("id"));
     }
@@ -218,7 +230,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "创建environments")
     @PostMapping("/environments")
-    public Object createEnvironment(@RequestBody MockEnvironment env) {
+    @BizApi(summary = "创建 Mock 环境", description = "创建 Mock 环境。", tags = { "z-script" })
+    public Object createEnvironment(@RequestBody @BizParam(name = "env", type = BizField.FieldType.STRING, description = "待创建的环境实体", position = BizParam.Position.BODY) MockEnvironment env) {
         env.setId(null);
         environmentMapper.insert(env);
         return mapOf("success", true, "id", env.getId());
@@ -233,7 +246,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "更新environments")
     @PutMapping("/environments")
-    public Object updateEnvironment(@RequestParam String envCode, @RequestBody MockEnvironment env) {
+    @BizApi(summary = "按 envCode 更新 Mock 环境", description = "按 envCode 更新 Mock 环境。", tags = { "z-script" })
+    public Object updateEnvironment(@RequestParam @BizParam(name = "envCode", type = BizField.FieldType.STRING, description = "目标环境编码", position = BizParam.Position.QUERY) String envCode, @RequestBody @BizParam(name = "env", type = BizField.FieldType.STRING, description = "新的环境实体", position = BizParam.Position.BODY) MockEnvironment env) {
         MockEnvironment existing = environmentMapper.selectOne(new QueryWrapper<MockEnvironment>().eq("env_code", envCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -254,7 +268,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "删除environments")
     @DeleteMapping("/environments")
-    public Object deleteEnvironment(@RequestParam String envCode) {
+    @BizApi(summary = "按 envCode 删除 Mock 环境。默认环境不可删除", description = "按 envCode 删除 Mock 环境。默认环境不可删除。", tags = { "z-script" })
+    public Object deleteEnvironment(@RequestParam @BizParam(name = "envCode", type = BizField.FieldType.STRING, description = "目标环境编码", position = BizParam.Position.QUERY) String envCode) {
         MockEnvironment existing = environmentMapper.selectOne(new QueryWrapper<MockEnvironment>().eq("env_code", envCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -274,6 +289,7 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询列表")
     @GetMapping("/scenarios/list")
+    @BizApi(summary = "查询全部 Mock 场景列表，按 id 降序", description = "查询全部 Mock 场景列表，按 id 降序。", tags = { "z-script" })
     public Object listScenarios() {
         return scenarioMapper.selectList(new QueryWrapper<MockScenario>().orderByDesc("id"));
     }
@@ -286,7 +302,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询scenarios")
     @GetMapping("/scenarios/byCode")
-    public Object getScenario(@RequestParam String scenarioCode) {
+    @BizApi(summary = "按 scenarioCode 查询 Mock 场景详情", description = "按 scenarioCode 查询 Mock 场景详情。", tags = { "z-script" })
+    public Object getScenario(@RequestParam @BizParam(name = "scenarioCode", type = BizField.FieldType.STRING, description = "场景编码", position = BizParam.Position.QUERY) String scenarioCode) {
         return scenarioMapper.selectOne(new QueryWrapper<MockScenario>().eq("scenario_code", scenarioCode));
     }
 
@@ -298,7 +315,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "创建scenarios")
     @PostMapping("/scenarios")
-    public Object createScenario(@RequestBody MockScenario scenario) {
+    @BizApi(summary = "创建 Mock 场景，initialState 缺省时为 started", description = "创建 Mock 场景，initialState 缺省时为 started。", tags = { "z-script" })
+    public Object createScenario(@RequestBody @BizParam(name = "scenario", type = BizField.FieldType.STRING, description = "待创建的 Mock 场景实体", position = BizParam.Position.BODY) MockScenario scenario) {
         scenario.setId(null);
         if (scenario.getInitialState() == null) {
             scenario.setInitialState("started");
@@ -317,7 +335,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "更新scenarios")
     @PutMapping("/scenarios")
-    public Object updateScenario(@RequestParam String scenarioCode, @RequestBody MockScenario scenario) {
+    @BizApi(summary = "按 scenarioCode 更新 Mock 场景", description = "按 scenarioCode 更新 Mock 场景。", tags = { "z-script" })
+    public Object updateScenario(@RequestParam @BizParam(name = "scenarioCode", type = BizField.FieldType.STRING, description = "目标场景编码", position = BizParam.Position.QUERY) String scenarioCode, @RequestBody @BizParam(name = "scenario", type = BizField.FieldType.STRING, description = "新的场景实体", position = BizParam.Position.BODY) MockScenario scenario) {
         MockScenario existing = scenarioMapper.selectOne(new QueryWrapper<MockScenario>().eq("scenario_code", scenarioCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -336,7 +355,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "删除scenarios")
     @DeleteMapping("/scenarios")
-    public Object deleteScenario(@RequestParam String scenarioCode) {
+    @BizApi(summary = "按 scenarioCode 删除 Mock 场景", description = "按 scenarioCode 删除 Mock 场景。", tags = { "z-script" })
+    public Object deleteScenario(@RequestParam @BizParam(name = "scenarioCode", type = BizField.FieldType.STRING, description = "目标场景编码", position = BizParam.Position.QUERY) String scenarioCode) {
         MockScenario existing = scenarioMapper.selectOne(new QueryWrapper<MockScenario>().eq("scenario_code", scenarioCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -355,7 +375,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "重置状态")
     @PostMapping("/scenarios/reset")
-    public Object resetScenarioState(@RequestParam String scenarioCode, @RequestParam(required = false) String instanceKey) {
+    @BizApi(summary = "重置场景状态机。instanceKey 为空时按默认实例重置，否则按指定实例重置", description = "重置场景状态机。instanceKey 为空时按默认实例重置，否则按指定实例重置。", tags = { "z-script" })
+    public Object resetScenarioState(@RequestParam @BizParam(name = "scenarioCode", type = BizField.FieldType.STRING, description = "目标场景编码", position = BizParam.Position.QUERY) String scenarioCode, @RequestParam(required = false) @BizParam(name = "instanceKey", type = BizField.FieldType.STRING, description = "实例 key，可选；为空时使用 {@code default}", position = BizParam.Position.QUERY) String instanceKey) {
         if (instanceKey == null || instanceKey.isEmpty()) {
             // Reset all instances
             scenarioStateMachine.resetState(scenarioCode, "default");
@@ -375,7 +396,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询实例列表")
     @GetMapping("/scenarios/instances")
-    public Object getScenarioInstances(@RequestParam String scenarioCode) {
+    @BizApi(summary = "查询场景的所有运行实例（来自状态机）", description = "查询场景的所有运行实例（来自状态机）。", tags = { "z-script" })
+    public Object getScenarioInstances(@RequestParam @BizParam(name = "scenarioCode", type = BizField.FieldType.STRING, description = "场景编码", position = BizParam.Position.QUERY) String scenarioCode) {
         return scenarioStateMachine.getAllInstances(scenarioCode);
     }
 
@@ -388,8 +410,10 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询列表")
     @GetMapping("/cases/list")
-    public Object listTestCases(@RequestParam(required = false) String caseGroup,
-                                @RequestParam(required = false) String envCode) {
+    @BizApi(summary = "查询 Mock 测试用例列表，可按 caseGroup、envCode 过滤，按 update_time 降序", description = "查询 Mock 测试用例列表，可按 caseGroup、envCode 过滤，按 update_time 降序。", tags = { "z-script" })
+    public Object listTestCases(@RequestParam(required = false) @BizParam(name = "caseGroup", type = BizField.FieldType.STRING, description = "用例分组，可选", position = BizParam.Position.QUERY) String caseGroup,
+                                @RequestParam(required = false)
+                                @BizParam(name = "envCode", type = BizField.FieldType.STRING, description = "环境编码，可选", position = BizParam.Position.QUERY) String envCode) {
         QueryWrapper<MockTestCase> qw = new QueryWrapper<>();
         if (caseGroup != null && !caseGroup.isEmpty()) {
             qw.eq("case_group", caseGroup);
@@ -411,7 +435,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询cases")
     @GetMapping("/cases/byCode")
-    public Object getTestCase(@RequestParam String caseCode) {
+    @BizApi(summary = "按 caseCode 查询 Mock 测试用例详情", description = "按 caseCode 查询 Mock 测试用例详情。", tags = { "z-script" })
+    public Object getTestCase(@RequestParam @BizParam(name = "caseCode", type = BizField.FieldType.STRING, description = "用例编码", position = BizParam.Position.QUERY) String caseCode) {
         return testCaseMapper.selectOne(new QueryWrapper<MockTestCase>().eq("case_code", caseCode));
     }
 
@@ -423,7 +448,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "创建cases")
     @PostMapping("/cases")
-    public Object createTestCase(@RequestBody MockTestCase testCase) {
+    @BizApi(summary = "创建 Mock 测试用例，对 status、priority、expectedBodyMatchType 提供缺省值", description = "创建 Mock 测试用例，对 status、priority、expectedBodyMatchType 提供缺省值。", tags = { "z-script" })
+    public Object createTestCase(@RequestBody @BizParam(name = "testCase", type = BizField.FieldType.STRING, description = "待创建的测试用例实体", position = BizParam.Position.BODY) MockTestCase testCase) {
         testCase.setId(null);
         if (testCase.getStatus() == null) {
             testCase.setStatus(1);
@@ -450,7 +476,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "更新cases")
     @PutMapping("/cases")
-    public Object updateTestCase(@RequestParam String caseCode, @RequestBody MockTestCase testCase) {
+    @BizApi(summary = "按 caseCode 更新 Mock 测试用例", description = "按 caseCode 更新 Mock 测试用例。", tags = { "z-script" })
+    public Object updateTestCase(@RequestParam @BizParam(name = "caseCode", type = BizField.FieldType.STRING, description = "目标用例编码", position = BizParam.Position.QUERY) String caseCode, @RequestBody @BizParam(name = "testCase", type = BizField.FieldType.STRING, description = "新的测试用例实体", position = BizParam.Position.BODY) MockTestCase testCase) {
         MockTestCase existing = testCaseMapper.selectOne(new QueryWrapper<MockTestCase>().eq("case_code", caseCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -471,7 +498,8 @@ public class MockPlatformController {
      */
     @Operation(summary = "删除cases")
     @DeleteMapping("/cases")
-    public Object deleteTestCase(@RequestParam String caseCode) {
+    @BizApi(summary = "按 caseCode 删除 Mock 测试用例", description = "按 caseCode 删除 Mock 测试用例。", tags = { "z-script" })
+    public Object deleteTestCase(@RequestParam @BizParam(name = "caseCode", type = BizField.FieldType.STRING, description = "目标用例编码", position = BizParam.Position.QUERY) String caseCode) {
         MockTestCase existing = testCaseMapper.selectOne(new QueryWrapper<MockTestCase>().eq("case_code", caseCode));
         if (existing == null) {
             return mapOf("success", false);
@@ -488,6 +516,7 @@ public class MockPlatformController {
      */
     @Operation(summary = "查询统计数据")
     @GetMapping("/stats")
+    @BizApi(summary = "汇总 Mock 平台统计信息：端点/场景/环境/用例总数以及 Top10 命中端点", description = "汇总 Mock 平台统计信息：端点/场景/环境/用例总数以及 Top10 命中端点。", tags = { "z-script" })
     public Object stats() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalEndpoints", endpointMapper.selectCount(null));
@@ -502,3 +531,6 @@ public class MockPlatformController {
         return stats;
     }
 }
+
+
+
