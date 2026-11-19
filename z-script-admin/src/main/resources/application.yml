@@ -19,6 +19,11 @@ spring:
 # z-boot-datasource-starter 的 ModuleDataSourceTemplate 读取的正是 z.base.db.<module>.*
 # （孵化前的历史写法是 spring.datasource.script.*，该键无人读取 → 静默回落到 localhost/root/空库）
 z:
+  # z-ext 预置埋点自登记控制台（运行期可被控制台切换扩展点实现）
+  ext:
+    console:
+      enabled: true
+      url: ${ZEXT_CONSOLE_URL:http://192.168.31.136:8888}
   base:
     db:
       script:
