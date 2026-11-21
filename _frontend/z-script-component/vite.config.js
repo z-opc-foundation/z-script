@@ -31,7 +31,7 @@ export default defineConfig({
         rollupOptions: {
             external: ['react', 'react-dom', 'react/jsx-runtime', 'antd', '@ant-design/icons',
                        '@yuku123/z-frontend-common', '@yuku123/z-frontend-common/ui',
-                       '@yuku123/z-frontend-common/ui/echarts'],
+                       '@yuku123/z-frontend-common/ui/echarts', '@yuku123/z-frontend-common/code'],
         },
         outDir: 'dist',
         emptyOutDir: false,

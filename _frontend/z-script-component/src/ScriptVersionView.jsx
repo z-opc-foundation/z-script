@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Tag, Button, Space, Select, Modal, Input, InputNumber, Form, Alert } from 'antd';
 import { ListTable, TableToolbar } from '@yuku123/z-frontend-common/ui';
+import { ZCodeEditor, DSL_TYPE_LANGUAGE } from '@yuku123/z-frontend-common/code';
 
 // 脚本版本/灰度面板。规范 §5：组件层只接 props，不自己 fetch。
 // 数据形状来自 ScriptVersionController：
@@ -288,11 +289,23 @@ export default function ScriptVersionView({
                         </Form.Item>
                     </Space>
                     <Form.Item
-                        name="dslContent"
-                        label="脚本内容"
-                        rules={[{ required: true, message: '必填' }]}
+                        noStyle
+                        shouldUpdate={(prev, cur) => prev.dslType !== cur.dslType}
                     >
-                        <Input.TextArea rows={6} placeholder="DSL 源码" />
+                        {({ getFieldValue }) => (
+                            <Form.Item
+                                name="dslContent"
+                                label="脚本内容"
+                                rules={[{ required: true, message: '必填' }]}
+                            >
+                                {/* 语言随 dslType 切换：EL/GROOVY/LUA/SQL/MOCK/API_BRIDGE → 编辑器语言 */}
+                                <ZCodeEditor
+                                    language={DSL_TYPE_LANGUAGE[getFieldValue('dslType')] || 'javascript'}
+                                    height={280}
+                                    placeholder="DSL 源码"
+                                />
+                            </Form.Item>
+                        )}
                     </Form.Item>
                     <Form.Item name="outputMapping" label="输出映射（可选）">
                         <Input placeholder="例如 ${data.text}" />

@@ -1,6 +1,6 @@
 {
   "name": "@yuku123/z-script-component",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Z-Script 可复用前端组件层（脚本列表 / Mock 端点列表 / 录制 / 场景，纯展示、接 props 不 fetch）",
   "type": "module",
   "main": "./dist/index.js",
@@ -25,7 +25,7 @@
     "react-router-dom": "^7.0.0"
   },
   "dependencies": {
-    "@yuku123/z-frontend-common": "^1.1.7"
+    "@yuku123/z-frontend-common": "^1.2.0"
   },
   "devDependencies": {
     "@ant-design/icons": "^6.1.0",
