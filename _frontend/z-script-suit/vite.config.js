@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {safeEmptyOutDir} from '../../build-tools/safe-vite-plugin.mjs'
 
+const localSiblings = process.env.LOCAL_SIBLINGS === '1';
+const workspaceRoot = path.resolve(__dirname, '../../..');
+
 // Z-Script 控制台应用层。
 //
 // ⚠️ base 必须与 admin 的 server.servlet.context-path 一致（/script/），
@@ -15,15 +18,24 @@ export default defineConfig({
     base: '/script/',
     plugins: [safeEmptyOutDir(), react()],
     resolve: {
-    dedupe: ['react', 'react-dom', 'react-router-dom', 'antd', '@ant-design/icons', 'axios'],
-        alias: { '@': path.resolve(__dirname, 'src'), ...(process.env.LOCAL_SIBLINGS === '1' ? { '@yuku123/z-script-component': '../z-script-component/src' } : {}) },
+        dedupe: ['react', 'react-dom', 'react-router-dom', 'antd', '@ant-design/icons', 'axios'],
+        alias: [
+            { find: '@', replacement: path.resolve(__dirname, 'src') },
+            ...(localSiblings ? [
+                { find: /^@yuku123\/z-script-component\/pages$/, replacement: path.resolve(__dirname, '../z-script-component/src/pages.js') },
+                { find: /^@yuku123\/z-script-component$/, replacement: path.resolve(__dirname, '../z-script-component/src/index.jsx') },
+                { find: /^@yuku123\/z-frontend-common\/ui$/, replacement: path.resolve(workspaceRoot, 'z-frontend-common/src/components/ui/index.js') },
+                { find: /^@yuku123\/z-frontend-common$/, replacement: path.resolve(workspaceRoot, 'z-frontend-common/src/index.js') },
+            ] : []),
+        ],
     },
     server: {
         port: 5173,
         host: '0.0.0.0',
+        fs: { allow: [localSiblings ? workspaceRoot : path.resolve(__dirname, '..')] },
         proxy: {
             // dev: /script/api/** → 本机 admin（同 context-path，无需 rewrite）
-            '/script': {
+            '^/script/api(?:/|$)': {
                 target: 'http://localhost:8086',
                 changeOrigin: true,
             },
